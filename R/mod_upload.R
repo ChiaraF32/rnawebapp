@@ -6,7 +6,7 @@
 #'
 #' @noRd
 #'
-#' @importFrom shiny NS tagList
+#' @importFrom shiny NS tagList tags fileInput actionButton br
 mod_upload_ui <- function(id) {
   ns <- NS(id)
   tagList(
@@ -20,7 +20,7 @@ mod_upload_ui <- function(id) {
       fileInput(ns("vcf"), "5. Upload RNA Variant Calls"),
       fileInput(ns("fusions"), "5. Upload RNA SV/Fusion Calls"),
 
-      br(),
+      tags$br(),
       actionButton(ns("proceed"), "Proceed to Data Processing", class = "btn btn-success")
     )
 
@@ -30,6 +30,8 @@ mod_upload_ui <- function(id) {
 #' upload Server Functions
 #'
 #' @noRd
+#' @importFrom shiny observeEvent observe req showNotification
+#' @importFrom utils read.csv
 mod_upload_server <- function(id, go_to_processing, uploaded_data){
   moduleServer(id, function(input, output, session){
 

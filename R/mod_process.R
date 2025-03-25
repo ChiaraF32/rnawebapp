@@ -6,7 +6,7 @@
 #'
 #' @noRd
 #'
-#' @importFrom shiny NS tagList
+#' @importFrom shiny NS tagList fluidRow column tags uiOutput plotOutput
 mod_process_ui <- function(id) {
   ns <- NS(id)
   tagList(
@@ -49,6 +49,8 @@ mod_process_ui <- function(id) {
 #' process Server Functions
 #'
 #' @noRd
+#' @importFrom shiny reactiveVal renderUI renderPlot observeEvent observe req tags
+#' @importFrom shinipsum random_DT random_ggplot
 mod_process_server <- function(id, uploaded_data) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
