@@ -1,12 +1,9 @@
 Package: rnawebapp
-Title: An Amazing Shiny App
+Title: Analyse RNAseq Data from Rare Disease Patient Cohort
 Version: 0.0.0.9000
 Authors@R: 
-    person(given = "firstname",
-           family = "lastname",
-           role = c("aut", "cre"),
-           email = "your@email.com")
-Description: What the package does (one paragraph).
+    person("Chiara", "Folland", , "chiara.folland@perkins.org.au", role = c("aut", "cre"))
+Description: A user interface for analysiing RNAseq data from rare disease patients. The user can upload their own OUTRIDER and FRASER datasets, alongside RNA VCFs and fusion calls, and use the UI to generate results and plots for each patient
 License: What license is it under?
 Imports: 
     config,
@@ -15,3 +12,5 @@ Imports:
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 7.1.1
+URL: https://github.com/ChiaraF32/rnawebapp.git
+BugReports: https://github.com/ChiaraF32/rnawebapp.git/issues
