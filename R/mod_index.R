@@ -51,7 +51,7 @@ mod_index_ui <- function(id){
 #' index Server Functions
 #'
 #' @noRd
-mod_index_server <- function(id){
+mod_index_server <- function(id, go_to_upload){
   moduleServer(id, function(input, output, session){
 
     #Landing page plot placeholders
@@ -62,8 +62,8 @@ mod_index_server <- function(id){
     observeEvent(input$get_started, {
       # Insert logic to route to your main analysis UI
       showNotification("Let's get started!")
+      go_to_upload()
     })
-
   })
 }
 
