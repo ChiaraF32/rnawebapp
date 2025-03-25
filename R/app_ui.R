@@ -5,6 +5,7 @@
 #' @import shiny
 #' @noRd
 app_ui <- function(request) {
+  options(shiny.maxRequestSize = 500 * 1024^2)  # 500 MB
   tagList(
     # Leave this function for adding external resources
     golem_add_external_resources(),

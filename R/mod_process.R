@@ -27,7 +27,13 @@ mod_process_ui <- function(id) {
         )
       ),
       column(
-        width = 8,
+        width = 4,
+        tags$div(
+          style = "padding: 30px",
+          tags$h1("Data Summary"),
+          DT::DTOutput(ns("data_summary"))
+        )
+
         # Later - processing output
       )
     )
@@ -37,13 +43,14 @@ mod_process_ui <- function(id) {
 #' process Server Functions
 #'
 #' @noRd
-mod_process_server <- function(id, uploaded_data){
-  moduleServer(id, function(input, output, session){
+mod_process_server <- function(id, uploaded_data) {
+  moduleServer(id, function(input, output, session) {
     ns <- session$ns
 
-    # Simulate processing steps (replace with real logic)
-    processing_state <- reactiveVal("start")
+    # Track which step is complete
+    processing_state <- reactiveVal("start")  # start → samples_checked → genes_converted → done
 
+    # --- Progress UI Renderers ---
     output$check_samples_ui <- renderUI({
       if (processing_state() %in% c("samples_checked", "genes_converted", "done")) {
         tags$p("✅ Checking sample identifiers... Done")
@@ -78,20 +85,41 @@ mod_process_server <- function(id, uploaded_data){
       }
     })
 
-    # Simulated processing sequence — replace with actual logic
-    observe({
-      # Step 1
-      Sys.sleep(1)
-      processing_state("samples_checked")
-
-      # Step 2
-      Sys.sleep(1)
-      processing_state("genes_converted")
-
-      # Step 3
-      Sys.sleep(1)
-      processing_state("done")
+    output$data_summary <- DT::renderDT({
+      if (processing_state() != "done") {
+        return(data.frame(Message = "Processing not yet complete."))
+      }
+      shinipsum::random_DT(nrow = 5, ncol = 2)
     })
+
+    # --- Observe uploaded_data and trigger steps ---
+
+    observe({
+      req(uploaded_data$samplesheet, uploaded_data$outrider, uploaded_data$fraser)
+      # Your validation logic here
+      message("✅ All inputs detected. Starting Step 1...")
+      Sys.sleep(1)  # simulate processing time
+      processing_state("samples_checked")
+    })
+
+    observeEvent(processing_state(), {
+      req(uploaded_data$outrider, uploaded_data$fraser)
+      if (processing_state() == "samples_checked") {
+        # Step 2: Convert gene names (e.g., Ensembl → Symbols)
+        # Your conversion logic here
+        Sys.sleep(1)
+        processing_state("genes_converted")
+      }
+    }, ignoreInit = TRUE)
+
+    observeEvent(processing_state(), {
+      if (processing_state() == "genes_converted") {
+        # Step 3: Check for missing data
+        # Your QC logic here
+        Sys.sleep(1)
+        processing_state("done")
+      }
+    }, ignoreInit = TRUE)
   })
 }
 

@@ -6,6 +6,15 @@
 #' @noRd
 app_server <- function(input, output, session) {
 
+  # Create a shared, reactive container for uploaded data
+  uploaded_data <- reactiveValues(
+    samplesheet = NULL,
+    outrider = NULL,
+    fraser = NULL,
+    vcf = NULL,
+    fusions = NULL
+  )
+
   # A reactive value to track which "page" we're on
   page <- reactiveVal(ROUTES$LANDING) #Default = landing page
 
@@ -16,6 +25,6 @@ app_server <- function(input, output, session) {
 
   #Handle landing page events
   mod_index_server("index_1", go_to_upload = navigate_to(ROUTES$UPLOAD, page))
-  mod_upload_server("upload_1", go_to_processing = navigate_to(ROUTES$PROCESSING, page))
-  mod_process_server("process_1")
+  mod_upload_server("upload_1", go_to_processing = navigate_to(ROUTES$PROCESSING, page), uploaded_data = uploaded_data)
+  mod_process_server("process_1", uploaded_data = uploaded_data)
 }

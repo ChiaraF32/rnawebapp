@@ -30,8 +30,13 @@ mod_upload_ui <- function(id) {
 #' upload Server Functions
 #'
 #' @noRd
-mod_upload_server <- function(id, go_to_processing){
+mod_upload_server <- function(id, go_to_processing, uploaded_data){
   moduleServer(id, function(input, output, session){
+
+    observeEvent(input$samplesheet, {
+      req(input$samplesheet)
+      uploaded_data$samplesheet <- read.csv(input$samplesheet$datapath)
+    })
 
     observeEvent(input$proceed, {
       showNotification("Proceeding to data processing...")
@@ -39,10 +44,30 @@ mod_upload_server <- function(id, go_to_processing){
       # You can later route to another module here
     })
 
+    observeEvent(input$outrider, {
+      req(input$outrider)
+      uploaded_data$outrider <- readRDS(input$outrider$datapath)
+    })
+
+    observeEvent(input$fraser, {
+      req(input$fraser)
+      uploaded_data$fraser <- readRDS(input$fraser$datapath)
+    })
+
     # Optional: observe file uploads for debug or processing
     observe({
       req(input$samplesheet)
       message("Samplesheet uploaded: ", input$samplesheet$name)
+    })
+
+    observe({
+      req(input$outrider)
+      message("OUTRIDER uploaded: ", input$outrider$name)
+    })
+
+    observe({
+      req(input$fraser)
+      message("FRASER uploaded: ", input$fraser$name)
     })
 
     # Repeat for other inputs if needed
