@@ -65,8 +65,8 @@ usethis::use_git()
 ## Sets the remote associated with 'name' to 'url'
 usethis::use_git_remote(
   name = "origin",
-  overwrite = TRUE,
-  url = "https://github.com/ChiaraF32/rnawebapp.git"
+  url = "https://github.com/ChiaraF32/rnawebapp.git",
+  overwrite = TRUE
 )
 
 # You're now set! ----
