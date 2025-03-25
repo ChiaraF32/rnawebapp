@@ -4,6 +4,9 @@
 # `{rnawebapp}`
 
 <!-- badges: start -->
+
+[![Lifecycle:
+experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
 <!-- badges: end -->
 
 ## Installation
@@ -30,7 +33,7 @@ This README has been compiled on the
 
 ``` r
 Sys.time()
-#> [1] "2025-03-25 10:06:20 AWST"
+#> [1] "2025-03-25 10:23:52 AWST"
 ```
 
 Here are the tests results and package coverage:
@@ -43,7 +46,7 @@ devtools::check(quiet = TRUE)
 #> Warning in readLines(old_path): incomplete final line found on
 #> '/Users/00104561/.R/Makevars'
 #> ── R CMD check results ─────────────────────────────── rnawebapp 0.0.0.9000 ────
-#> Duration: 13.9s
+#> Duration: 15s
 #> 
 #> ❯ checking DESCRIPTION meta-information ... NOTE
 #>   Malformed Description field: should contain one or more complete sentences.
