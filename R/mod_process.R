@@ -33,8 +33,14 @@ mod_process_ui <- function(id) {
           tags$h1("Data Summary"),
           DT::DTOutput(ns("data_summary"))
         )
-
-        # Later - processing output
+      ),
+      column(
+        width = 4,
+        tags$div(
+          style = "padding: 30px",
+          tags$h1("Phenotype"),
+          plotOutput(ns("phenotype_plot"))
+        )
       )
     )
   )
@@ -90,6 +96,11 @@ mod_process_server <- function(id, uploaded_data) {
         return(data.frame(Message = "Processing not yet complete."))
       }
       shinipsum::random_DT(nrow = 5, ncol = 2)
+    })
+
+    output$phenotype_plot <- renderPlot({
+      req(processing_state() == "done")
+      shinipsum::random_ggplot("bar")
     })
 
     # --- Observe uploaded_data and trigger steps ---
