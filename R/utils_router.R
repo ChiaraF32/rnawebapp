@@ -27,7 +27,7 @@ render_router_ui <- function(current_page) {
   switch(current_page,
          "index" = mod_index_ui("index_1"),
          "upload" = mod_upload_ui("upload_1"),
-         "processing" = mod_processing_ui("processing_1"),
+         "processing" = mod_process_ui("process_1"),
          "results" = mod_results_ui("results_1"),
          div("404: Page Not Found")
   )

@@ -20,7 +20,7 @@ attachment::att_amend_desc()
 
 ## Add modules ----
 ## Create a module infrastructure in R/
-golem::add_module(name = "index", with_test = TRUE) # Name of the module
+golem::add_module(name = "process", with_test = TRUE) # Name of the module
 golem::add_module(name = "upload", with_test = TRUE) # Name of the module
 
 ## Add helper functions ----

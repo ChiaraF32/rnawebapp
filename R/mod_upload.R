@@ -30,11 +30,12 @@ mod_upload_ui <- function(id) {
 #' upload Server Functions
 #'
 #' @noRd
-mod_upload_server <- function(id){
+mod_upload_server <- function(id, go_to_processing){
   moduleServer(id, function(input, output, session){
 
     observeEvent(input$proceed, {
       showNotification("Proceeding to data processing...")
+      go_to_processing()
       # You can later route to another module here
     })
 

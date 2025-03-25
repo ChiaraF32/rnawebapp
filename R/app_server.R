@@ -16,5 +16,6 @@ app_server <- function(input, output, session) {
 
   #Handle landing page events
   mod_index_server("index_1", go_to_upload = navigate_to(ROUTES$UPLOAD, page))
-  mod_upload_server("upload_1")
+  mod_upload_server("upload_1", go_to_processing = navigate_to(ROUTES$PROCESSING, page))
+  mod_process_server("process_1")
 }
