@@ -14,6 +14,7 @@ ROUTES <- list(
   LANDING = "index",
   UPLOAD = "upload",
   PROCESSING = "processing",
+  PARAMETERS = "parameters",
   RESULTS = "results"
 )
 
@@ -28,6 +29,7 @@ render_router_ui <- function(current_page) {
          "index" = mod_index_ui("index_1"),
          "upload" = mod_upload_ui("upload_1"),
          "processing" = mod_process_ui("process_1"),
+         "parameters" = mod_parameters_ui("parameters_1"),
          "results" = mod_results_ui("results_1"),
          div("404: Page Not Found")
   )

@@ -23,7 +23,8 @@ mod_process_ui <- function(id) {
           tags$br(),
           uiOutput(ns("check_missing_ui")),
           tags$br(),
-          uiOutput(ns("complete_ui"))
+          uiOutput(ns("complete_ui")),
+          actionButton(ns("proceed"), "Proceed to Parameter Selection", class = "btn btn-success")
         )
       ),
       column(
@@ -51,7 +52,7 @@ mod_process_ui <- function(id) {
 #' @noRd
 #' @importFrom shiny reactiveVal renderUI renderPlot observeEvent observe req tags
 #' @importFrom shinipsum random_DT random_ggplot
-mod_process_server <- function(id, uploaded_data) {
+mod_process_server <- function(id, go_to_parameters, uploaded_data) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
 
@@ -91,6 +92,11 @@ mod_process_server <- function(id, uploaded_data) {
       if (processing_state() == "done") {
         tags$p("🎉 Data Processing Complete!")
       }
+    })
+
+    observeEvent(input$proceed, {
+      showNotification("Proceed to parameter selection")
+      go_to_parameters()
     })
 
     output$data_summary <- DT::renderDT({
