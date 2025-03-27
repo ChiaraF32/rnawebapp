@@ -15,7 +15,9 @@ mod_individual_res_ui <- function(id) {
              tags$h1("Individual Results"),
              selectInput(ns("select_sample"), "Choose Sample", choices = c("sample1", "sample2", "sample3")),
              textOutput(ns("genes_overlap"))
-      )
+      ),
+      column(6,
+             actionButton(ns("return"), "Return to parameter selection"))
     ),
 
     tags$hr(),
@@ -60,9 +62,12 @@ mod_individual_res_ui <- function(id) {
 #' individual_res Server Functions
 #'
 #' @noRd
-mod_individual_res_server <- function(id, uploaded_data){
+mod_individual_res_server <- function(id, go_to_parameters, uploaded_data){
   moduleServer(id, function(input, output, session){
     ns <- session$ns
+
+    observeEvent(input$return, {
+      go_to_parameters()})
 
     overlap <- reactive({
       req(input$select_sample)

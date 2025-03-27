@@ -28,7 +28,7 @@ mod_parameters_ui <- function(id) {
 #' @noRd
 #'
 #' @importFrom shiny NS renderUI selectInput fileInput
-mod_parameters_server <- function(id, go_to_individual_res, uploaded_data){
+mod_parameters_server <- function(id, go_to_individual_res, go_to_cohort_res, uploaded_data){
   moduleServer(id, function(input, output, session){
     ns <- session$ns
 
@@ -52,7 +52,11 @@ mod_parameters_server <- function(id, go_to_individual_res, uploaded_data){
 
     observeEvent(input$proceed, {
       showNotification("Proceeding to data results")
-      go_to_individual_res()
+      if ("Individual" %in% input$analysis_type) {
+        go_to_individual_res()
+      } else {
+        go_to_cohort_res()
+      }
     })
   })
 }
