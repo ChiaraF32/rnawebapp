@@ -7,54 +7,69 @@
 #' @noRd
 #'
 #' @importFrom shiny NS tagList selectInput uiOutput plotOutput
+#'
 mod_individual_res_ui <- function(id) {
   ns <- NS(id)
   tagList(
-    fluidRow(
-      column(6,
-             tags$h1("Individual Results"),
-             selectInput(ns("select_sample"), "Choose Sample", choices = c("sample1", "sample2", "sample3")),
-             textOutput(ns("genes_overlap"))
+    util_progress_bar(current_step = "Results"),
+    tags$div(
+      style = "padding: 20px;",
+      fluidRow(
+        style = "text-align:left;",
+        tags$h1("Individual Results"),
+        selectInput(ns("select_sample"), "Choose Sample", choices = c("sample1", "sample2", "sample3")),
+        textOutput(ns("genes_overlap"))
       ),
-      column(6,
-             actionButton(ns("return"), "Return to parameter selection"))
-    ),
 
-    tags$hr(),
+      tags$hr(),
 
-    fluidRow(
-      column(6,
-             tags$h2("OUTRIDER Results"),
-             DT::DTOutput(ns("outrider_res"))
-             ),
-      column(6,
-             tags$h2("FRASER Results"),
-             DT::DTOutput(ns("fraser_res"))
-             )
-    ),
+      fluidRow(
+        column(6,
+               tags$h2("OUTRIDER Results"),
+               DT::DTOutput(ns("outrider_res"))
+        ),
+        column(6,
+               tags$h2("FRASER Results"),
+               DT::DTOutput(ns("fraser_res"))
+        )
+      ),
 
-    fluidRow(
-      column(6,
-             tags$h2("OUTRIDER Volcano Plot"),
-             plotOutput(ns("outrider_volcplot"))
-             ),
-      column(6,
-             tags$h2("FRASER Volcano Plot"),
-             plotOutput(ns("fraser_volcplot"))
-             )
-    ),
+      fluidRow(
+        column(6,
+               tags$h2("OUTRIDER Volcano Plot"),
+               plotOutput(ns("outrider_volcplot"))
+        ),
+        column(6,
+               tags$h2("FRASER Volcano Plot"),
+               plotOutput(ns("fraser_volcplot"))
+        )
+      ),
 
-    tags$hr(),
+      tags$hr(),
 
-    fluidRow(
-      column(6,
-             tags$h2("RNA Variant Calling Results"),
-             DT::DTOutput(ns("rvc_table"))
-             ),
-      column(6,
-             tags$h2("RNA Fusions & SV Results"),
-             DT::DTOutput(ns("fusionsv_table"))
-             )
+      fluidRow(
+        column(6,
+               tags$h2("RNA Variant Calling Results"),
+               DT::DTOutput(ns("rvc_table"))
+        ),
+        column(6,
+               tags$h2("RNA Fusions & SV Results"),
+               DT::DTOutput(ns("fusionsv_table"))
+        )
+      ),
+
+      fluidRow(
+        column(6,
+               style = "text-align:left; padding: 20px;",
+               tags$br(),
+               actionButton(ns("return"), "Return to parameter selection", class = 'btn btn-warning')),
+        column(6,
+               style = "text-align:left; padding: 20px;",
+               tags$br(),
+               actionButton(ns("download"), "Download Report", class = "btn btn-success"))
+      ),
+
+      mod_home_button_ui(ns("home_btn"))
     )
   )
 }
@@ -62,12 +77,14 @@ mod_individual_res_ui <- function(id) {
 #' individual_res Server Functions
 #'
 #' @noRd
-mod_individual_res_server <- function(id, go_to_parameters, uploaded_data){
+mod_individual_res_server <- function(id, go_to_parameters, go_to_index, uploaded_data){
   moduleServer(id, function(input, output, session){
     ns <- session$ns
 
     observeEvent(input$return, {
       go_to_parameters()})
+
+    mod_home_button_server("home_btn", go_to_index = go_to_index)
 
     overlap <- reactive({
       req(input$select_sample)

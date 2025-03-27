@@ -17,7 +17,7 @@ mod_index_ui <- function(id){
       tags$h1("Welcome to RNA Web App"),
       tags$p("Analyse RNA-seq data from rare disease patients."),
       tags$br(),
-      actionButton(ns("get_started"), "Get Started"),
+      actionButton(ns("get_started"), "Get Started", class = "btn btn-success"),
       tags$br(),
       tags$a(href = "quickstart.html", target = "_blank",
              class = "btn btn-secondary", style = "margin: 10px;",

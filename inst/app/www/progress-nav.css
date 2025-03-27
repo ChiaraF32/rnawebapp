@@ -1,0 +1,28 @@
+
+.progress-nav {
+  display: flex;
+  justify-content: space-between;
+  padding: 20px 10px;
+  background-color: #f4f4f4;
+  border-bottom: 2px solid #ddd;
+  font-family: sans-serif;
+}
+
+.progress-step {
+  flex-grow: 1;
+  text-align: center;
+  padding: 10px;
+  font-weight: bold;
+  color: #aaa;
+  border-bottom: 4px solid transparent;
+  transition: all 0.3s ease;
+}
+
+.progress-step.active {
+  color: #2c3e50;
+  border-color: #1abc9c;
+}
+
+.progress-step.inactive {
+  opacity: 0.5;
+}

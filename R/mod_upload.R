@@ -10,6 +10,7 @@
 mod_upload_ui <- function(id) {
   ns <- NS(id)
   tagList(
+    util_progress_bar(current_step = "Upload"),
     tags$div(
       style = "padding: 30px;",
       tags$h2("Upload Your Data"),
@@ -21,7 +22,8 @@ mod_upload_ui <- function(id) {
       fileInput(ns("fusions"), "5. Upload RNA SV/Fusion Calls"),
 
       tags$br(),
-      actionButton(ns("proceed"), "Proceed to Data Processing", class = "btn btn-success")
+      mod_nav_buttons_ui(ns("nav_buttons")),
+      mod_home_button_ui(ns("home_btn"))
     )
 
   )
@@ -32,17 +34,15 @@ mod_upload_ui <- function(id) {
 #' @noRd
 #' @importFrom shiny observeEvent observe req showNotification
 #' @importFrom utils read.csv
-mod_upload_server <- function(id, go_to_processing, uploaded_data){
+mod_upload_server <- function(id, go_to_processing, go_to_index, uploaded_data){
   moduleServer(id, function(input, output, session){
+
+    mod_nav_buttons_server("nav_buttons", next_page = go_to_processing, previous_page = go_to_index)
+    mod_home_button_server("home_btn", go_to_index = go_to_index)
 
     observeEvent(input$samplesheet, {
       req(input$samplesheet)
       uploaded_data$samplesheet <- read.csv(input$samplesheet$datapath)
-    })
-
-    observeEvent(input$proceed, {
-      showNotification("Proceeding to data processing...")
-      go_to_processing()
     })
 
     observeEvent(input$outrider, {

@@ -10,6 +10,7 @@
 mod_process_ui <- function(id) {
   ns <- NS(id)
   tagList(
+    util_progress_bar(current_step = "Processing"),
     fluidRow(
       column(
         width = 4,
@@ -23,8 +24,7 @@ mod_process_ui <- function(id) {
           tags$br(),
           uiOutput(ns("check_missing_ui")),
           tags$br(),
-          uiOutput(ns("complete_ui")),
-          actionButton(ns("proceed"), "Proceed to Parameter Selection", class = "btn btn-success")
+          uiOutput(ns("complete_ui"))
         )
       ),
       column(
@@ -43,7 +43,9 @@ mod_process_ui <- function(id) {
           plotOutput(ns("phenotype_plot"))
         )
       )
-    )
+    ),
+    mod_nav_buttons_ui(ns("nav_buttons")),
+    mod_home_button_ui(ns("home_btn"))
   )
 }
 
@@ -52,9 +54,13 @@ mod_process_ui <- function(id) {
 #' @noRd
 #' @importFrom shiny reactiveVal renderUI renderPlot observeEvent observe req tags
 #' @importFrom shinipsum random_DT random_ggplot
-mod_process_server <- function(id, go_to_parameters, uploaded_data) {
+mod_process_server <- function(id, go_to_parameters, go_to_upload, go_to_index, uploaded_data) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
+
+    #Buttons
+    mod_nav_buttons_server("nav_buttons", next_page = go_to_parameters, previous_page = go_to_upload)
+    mod_home_button_server("home_btn", go_to_index = go_to_index)
 
     # Track which step is complete
     processing_state <- reactiveVal("start")  # start → samples_checked → genes_converted → done
@@ -92,11 +98,6 @@ mod_process_server <- function(id, go_to_parameters, uploaded_data) {
       if (processing_state() == "done") {
         tags$p("🎉 Data Processing Complete!")
       }
-    })
-
-    observeEvent(input$proceed, {
-      showNotification("Proceed to parameter selection")
-      go_to_parameters()
     })
 
     output$data_summary <- DT::renderDT({

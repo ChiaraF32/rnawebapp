@@ -11,7 +11,7 @@
 
 # Named routes for clarity and typo-proof switching
 ROUTES <- list(
-  LANDING = "index",
+  INDEX = "index",
   UPLOAD = "upload",
   PROCESSING = "processing",
   PARAMETERS = "parameters",

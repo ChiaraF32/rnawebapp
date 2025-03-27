@@ -10,6 +10,7 @@
 mod_parameters_ui <- function(id) {
   ns <- NS(id)
   tagList(
+    util_progress_bar(current_step = "Parameters"),
     tags$div(
       style = "text-align:left; padding: 50px;",
       tags$h1("Choose Analysis Parameters"),
@@ -19,7 +20,8 @@ mod_parameters_ui <- function(id) {
       uiOutput(ns("alignment_upload")),
       tags$br(),
       actionButton(ns("proceed"), "Proceed to Results", class = "btn btn-success")
-    )
+    ),
+    mod_home_button_ui(ns("home_btn")),
   )
 }
 
@@ -28,7 +30,7 @@ mod_parameters_ui <- function(id) {
 #' @noRd
 #'
 #' @importFrom shiny NS renderUI selectInput fileInput
-mod_parameters_server <- function(id, go_to_individual_res, go_to_cohort_res, uploaded_data){
+mod_parameters_server <- function(id, go_to_individual_res, go_to_cohort_res, go_to_processing, go_to_index, uploaded_data){
   moduleServer(id, function(input, output, session){
     ns <- session$ns
 
@@ -58,6 +60,8 @@ mod_parameters_server <- function(id, go_to_individual_res, go_to_cohort_res, up
         go_to_cohort_res()
       }
     })
+
+    mod_home_button_server("home_btn", go_to_index = go_to_index)
   })
 }
 
