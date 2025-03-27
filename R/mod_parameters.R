@@ -6,7 +6,7 @@
 #'
 #' @noRd
 #'
-#' @importFrom shiny NS tagList
+#' @importFrom shiny NS tagList tags uiOutput actionButton checkboxGroupInput
 mod_parameters_ui <- function(id) {
   ns <- NS(id)
   tagList(
@@ -26,14 +26,16 @@ mod_parameters_ui <- function(id) {
 #' parameters Server Functions
 #'
 #' @noRd
-mod_parameters_server <- function(id, uploaded_data){
+#'
+#' @importFrom shiny NS renderUI selectInput fileInput
+mod_parameters_server <- function(id, go_to_individual_res, uploaded_data){
   moduleServer(id, function(input, output, session){
     ns <- session$ns
 
     # Conditional sample selection
     output$sample_selection <- renderUI({
       if ("Individual" %in% input$analysis_type) {
-        selectInput(ns("samples"), "Select Samples", choices = sample_choices, multiple = TRUE)
+        selectInput(ns("samples"), "Select Samples", choices = c("gene1", "gene2", "gene3"), multiple = TRUE)
       } else {
         NULL
       }
@@ -46,6 +48,11 @@ mod_parameters_server <- function(id, uploaded_data){
       } else {
         NULL
       }
+    })
+
+    observeEvent(input$proceed, {
+      showNotification("Proceeding to data results")
+      go_to_individual_res()
     })
   })
 }

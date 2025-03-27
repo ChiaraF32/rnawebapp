@@ -43,7 +43,6 @@ mod_upload_server <- function(id, go_to_processing, uploaded_data){
     observeEvent(input$proceed, {
       showNotification("Proceeding to data processing...")
       go_to_processing()
-      # You can later route to another module here
     })
 
     observeEvent(input$outrider, {

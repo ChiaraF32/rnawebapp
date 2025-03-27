@@ -15,7 +15,8 @@ ROUTES <- list(
   UPLOAD = "upload",
   PROCESSING = "processing",
   PARAMETERS = "parameters",
-  RESULTS = "results"
+  INDIVIDUAL_RES = "individual_res",
+  COHORT_RES = "cohort_res"
 )
 
 #' Render the correct UI for the current route
@@ -30,7 +31,8 @@ render_router_ui <- function(current_page) {
          "upload" = mod_upload_ui("upload_1"),
          "processing" = mod_process_ui("process_1"),
          "parameters" = mod_parameters_ui("parameters_1"),
-         "results" = mod_results_ui("results_1"),
+         "individual_res" = mod_individual_res_ui("individual_res_1"),
+         "cohort_res" = mod_cohort_res_ui("cohort_res_1"),
          div("404: Page Not Found")
   )
 }
