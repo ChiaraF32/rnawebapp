@@ -1,6 +1,6 @@
 #' index UI Function
 #'
-#' @description A shiny Module.
+#' @description Shiny module providing a homepage for the RNAseq web app
 #'
 #' @param id,input,output,session Internal parameters for {shiny}.
 #'

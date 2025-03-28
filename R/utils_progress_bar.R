@@ -1,11 +1,11 @@
-#' Build a visual progress navigator for analysis steps
+#' progress navigator
 #'
 #' @param current_step String indicating the active step (must match one of the `steps`)
 #' @param steps Character vector of step labels
 #'
 #' @return A 'taglist' with the progress navigator UI
 #'
-#' @description A utils function
+#' @description A utils function for building a visual progress navigator
 #'
 #' @noRd
 

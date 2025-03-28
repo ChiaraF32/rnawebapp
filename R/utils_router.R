@@ -25,6 +25,8 @@ ROUTES <- list(
 #'
 #' @return A UI component corresponding to the active page
 #' @noRd
+#'
+#' @importFrom shiny div
 render_router_ui <- function(current_page) {
   switch(current_page,
          "index" = mod_index_ui("index_1"),
@@ -44,6 +46,7 @@ render_router_ui <- function(current_page) {
 #'
 #' @return A function that updates the page reactive when called
 #' @noRd
+#'
 navigate_to <- function(route, page_reactive) {
   force(route)  # ensure route is captured correctly
   force(page_reactive)

@@ -25,18 +25,14 @@ app_ui <- function(request) {
 #' @importFrom golem add_resource_path activate_js favicon bundle_resources
 #' @noRd
 golem_add_external_resources <- function() {
-  add_resource_path(
-    "www",
-    app_sys("app/www")
-  )
+  add_resource_path("www", app_sys("app/www"))
 
   tags$head(
-    favicon(ext = "png"),
-    bundle_resources(
-      path = app_sys("app/www"),
-      app_title = "rnawebapp"
-    )
-    # Add here other external resources
-    # for example, you can add shinyalert::useShinyalert()
+    # Favicon (optional)
+    tags$link(rel = "shortcut icon", href = "dna-medical-svgrepo-com.png"),
+
+    # Custom CSS styles
+    tags$link(rel = "stylesheet", type = "text/css", href = "buttons.css"),
+    tags$link(rel = "stylesheet", type = "text/css", href = "progress-nav.css")
   )
 }

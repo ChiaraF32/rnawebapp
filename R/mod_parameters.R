@@ -1,6 +1,6 @@
 #' parameters UI Function
 #'
-#' @description A shiny Module.
+#' @description A shiny Module for selecting parameters for analysis of RNAseq data
 #'
 #' @param id,input,output,session Internal parameters for {shiny}.
 #'
@@ -11,17 +11,18 @@ mod_parameters_ui <- function(id) {
   ns <- NS(id)
   tagList(
     util_progress_bar(current_step = "Parameters"),
-    tags$div(
-      style = "text-align:left; padding: 50px;",
-      tags$h1("Choose Analysis Parameters"),
-      checkboxGroupInput(ns("analysis_type"), "Analysis Type", selected = NULL, choices = c("Individual", "Cohort")),
-      uiOutput(ns("sample_selection")),
-      checkboxGroupInput(ns("results"), "Results to Display", selected = NULL, choices = c("Aberrant Expression", "Aberrant Splicing", "RNA Variant Calls", "RNA Fusions / SVs")),
-      uiOutput(ns("alignment_upload")),
-      tags$br(),
-      actionButton(ns("proceed"), "Proceed to Results", class = "btn btn-success")
-    ),
-    mod_home_button_ui(ns("home_btn")),
+    util_page_layout(
+      nav_id = ns("nav_buttons"),
+      home_id = ns("home_btn"),
+      tags$div(
+        style = "text-align:left; padding: 30px;",
+        tags$h1("Choose Analysis Parameters"),
+        checkboxGroupInput(ns("analysis_type"), "Analysis Type", selected = NULL, choices = c("Individual", "Cohort")),
+        uiOutput(ns("sample_selection")),
+        checkboxGroupInput(ns("results"), "Results to Display", selected = NULL, choices = c("Aberrant Expression", "Aberrant Splicing", "RNA Variant Calls", "RNA Fusions / SVs")),
+        uiOutput(ns("alignment_upload"))
+      )
+    )
   )
 }
 
@@ -33,6 +34,18 @@ mod_parameters_ui <- function(id) {
 mod_parameters_server <- function(id, go_to_individual_res, go_to_cohort_res, go_to_processing, go_to_index, uploaded_data){
   moduleServer(id, function(input, output, session){
     ns <- session$ns
+
+    go_to_results <- function() {
+      if ("Individual" %in% input$analysis_type) {
+        go_to_individual_res()
+      } else {
+        go_to_cohort_res()
+      }
+    }
+
+    #Buttons
+    mod_nav_buttons_server("nav_buttons", next_page = go_to_results, previous_page = go_to_upload)
+    mod_home_button_server("home_btn", go_to_index = go_to_index)
 
     # Conditional sample selection
     output$sample_selection <- renderUI({
@@ -51,17 +64,6 @@ mod_parameters_server <- function(id, go_to_individual_res, go_to_cohort_res, go
         NULL
       }
     })
-
-    observeEvent(input$proceed, {
-      showNotification("Proceeding to data results")
-      if ("Individual" %in% input$analysis_type) {
-        go_to_individual_res()
-      } else {
-        go_to_cohort_res()
-      }
-    })
-
-    mod_home_button_server("home_btn", go_to_index = go_to_index)
   })
 }
 

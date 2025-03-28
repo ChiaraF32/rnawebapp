@@ -1,75 +1,77 @@
 #' individual_res UI Function
 #'
-#' @description A shiny Module.
+#' @description A shiny Module for displaying results of individual analysis.
 #'
 #' @param id,input,output,session Internal parameters for {shiny}.
 #'
 #' @noRd
 #'
-#' @importFrom shiny NS tagList selectInput uiOutput plotOutput
+#' @importFrom shiny NS tagList selectInput uiOutput plotOutput column tags fluidRow textOutput actionButton
+#' @importFrom DT DTOutput
 #'
 mod_individual_res_ui <- function(id) {
   ns <- NS(id)
   tagList(
     util_progress_bar(current_step = "Results"),
-    tags$div(
-      style = "padding: 20px;",
-      fluidRow(
-        style = "text-align:left;",
-        tags$h1("Individual Results"),
-        selectInput(ns("select_sample"), "Choose Sample", choices = c("sample1", "sample2", "sample3")),
-        textOutput(ns("genes_overlap"))
-      ),
-
-      tags$hr(),
-
-      fluidRow(
-        column(6,
-               tags$h2("OUTRIDER Results"),
-               DT::DTOutput(ns("outrider_res"))
+    util_page_layout(
+      home_id = ns("home_btn"),
+      tags$div(
+        style = "padding: 20px;",
+        fluidRow(
+          style = "text-align:left;",
+          tags$h1("Individual Results"),
+          selectInput(ns("select_sample"), "Choose Sample", choices = c("sample1", "sample2", "sample3")),
+          textOutput(ns("genes_overlap"))
         ),
-        column(6,
-               tags$h2("FRASER Results"),
-               DT::DTOutput(ns("fraser_res"))
-        )
-      ),
 
-      fluidRow(
-        column(6,
-               tags$h2("OUTRIDER Volcano Plot"),
-               plotOutput(ns("outrider_volcplot"))
+        tags$hr(),
+
+        fluidRow(
+          column(6,
+                 tags$h2("OUTRIDER Results"),
+                 DTOutput(ns("outrider_res"))
+          ),
+          column(6,
+                 tags$h2("FRASER Results"),
+                 DTOutput(ns("fraser_res"))
+          )
         ),
-        column(6,
-               tags$h2("FRASER Volcano Plot"),
-               plotOutput(ns("fraser_volcplot"))
-        )
-      ),
 
-      tags$hr(),
-
-      fluidRow(
-        column(6,
-               tags$h2("RNA Variant Calling Results"),
-               DT::DTOutput(ns("rvc_table"))
+        fluidRow(
+          column(6,
+                 tags$h2("OUTRIDER Volcano Plot"),
+                 plotOutput(ns("outrider_volcplot"))
+          ),
+          column(6,
+                 tags$h2("FRASER Volcano Plot"),
+                 plotOutput(ns("fraser_volcplot"))
+          )
         ),
-        column(6,
-               tags$h2("RNA Fusions & SV Results"),
-               DT::DTOutput(ns("fusionsv_table"))
+
+        tags$hr(),
+
+        fluidRow(
+          column(6,
+                 tags$h2("RNA Variant Calling Results"),
+                 DTOutput(ns("rvc_table"))
+          ),
+          column(6,
+                 tags$h2("RNA Fusions & SV Results"),
+                 DTOutput(ns("fusionsv_table"))
+          )
+        ),
+
+        fluidRow(
+          column(6,
+                 style = "text-align:left; padding: 20px;",
+                 tags$br(),
+                 actionButton(ns("return"), "Return to parameter selection", class = 'btn btn-warning')),
+          column(6,
+                 style = "text-align:left; padding: 20px;",
+                 tags$br(),
+                 actionButton(ns("download"), "Download Report", class = "btn btn-success"))
         )
-      ),
-
-      fluidRow(
-        column(6,
-               style = "text-align:left; padding: 20px;",
-               tags$br(),
-               actionButton(ns("return"), "Return to parameter selection", class = 'btn btn-warning')),
-        column(6,
-               style = "text-align:left; padding: 20px;",
-               tags$br(),
-               actionButton(ns("download"), "Download Report", class = "btn btn-success"))
-      ),
-
-      mod_home_button_ui(ns("home_btn"))
+      )
     )
   )
 }
@@ -77,6 +79,10 @@ mod_individual_res_ui <- function(id) {
 #' individual_res Server Functions
 #'
 #' @noRd
+#'
+#' @importFrom shiny observeEvent reactive req renderText renderPlot
+#' @importFrom DT renderDT
+#' @importFrom shinipsum random_DT random_ggplot
 mod_individual_res_server <- function(id, go_to_parameters, go_to_index, uploaded_data){
   moduleServer(id, function(input, output, session){
     ns <- session$ns
@@ -95,17 +101,17 @@ mod_individual_res_server <- function(id, go_to_parameters, go_to_index, uploade
       paste0("Genes aberrantly expressed and spliced: ", overlap())
     })
 
-    output$outrider_res <- DT::renderDT(shinipsum::random_DT(nrow = 6, ncol = 9, type = "numchar"))
+    output$outrider_res <- renderDT(random_DT(nrow = 6, ncol = 9, type = "numchar"))
 
-    output$fraser_res <- DT::renderDT(shinipsum::random_DT(nrow = 6, ncol = 9, type = "numchar"))
+    output$fraser_res <- renderDT(random_DT(nrow = 6, ncol = 9, type = "numchar"))
 
-    output$outrider_volcplot <- renderPlot(shinipsum::random_ggplot(type = "point"))
+    output$outrider_volcplot <- renderPlot(random_ggplot(type = "point"))
 
-    output$fraser_volcplot <- renderPlot(shinipsum::random_ggplot(type = "point"))
+    output$fraser_volcplot <- renderPlot(random_ggplot(type = "point"))
 
-    output$rvc_table <- DT::renderDT(shinipsum::random_DT(nrow = 6, ncol = 9, type = "numchar"))
+    output$rvc_table <- renderDT(random_DT(nrow = 6, ncol = 9, type = "numchar"))
 
-    output$fusionsv_table <- DT::renderDT(shinipsum::random_DT(nrow = 6, ncol = 9, type = "numchar"))
+    output$fusionsv_table <- renderDT(random_DT(nrow = 6, ncol = 9, type = "numchar"))
 
   })
 }

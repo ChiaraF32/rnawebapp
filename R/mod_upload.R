@@ -1,31 +1,28 @@
 #' upload UI Function
 #'
-#' @description A shiny Module.
+#' @description Shiny module for uploading data
 #'
 #' @param id,input,output,session Internal parameters for {shiny}.
 #'
 #' @noRd
 #'
-#' @importFrom shiny NS tagList tags fileInput actionButton br
+#' @importFrom shiny NS tagList tags fileInput
 mod_upload_ui <- function(id) {
   ns <- NS(id)
   tagList(
     util_progress_bar(current_step = "Upload"),
-    tags$div(
-      style = "padding: 30px;",
+    util_page_layout(
+      nav_id = ns("nav_buttons"),
+      home_id = ns("home_btn"),
+
       tags$h2("Upload Your Data"),
 
       fileInput(ns("samplesheet"), "1. Upload Samplesheet"),
       fileInput(ns("outrider"), "2. Upload OUTRIDER Dataset"),
       fileInput(ns("fraser"), "3. Upload FRASER Dataset"),
-      fileInput(ns("vcf"), "5. Upload RNA Variant Calls"),
-      fileInput(ns("fusions"), "5. Upload RNA SV/Fusion Calls"),
-
-      tags$br(),
-      mod_nav_buttons_ui(ns("nav_buttons")),
-      mod_home_button_ui(ns("home_btn"))
+      fileInput(ns("vcf"), "4. Upload RNA Variant Calls"),
+      fileInput(ns("fusions"), "5. Upload RNA SV/Fusion Calls")
     )
-
   )
 }
 
@@ -70,8 +67,6 @@ mod_upload_server <- function(id, go_to_processing, go_to_index, uploaded_data){
       req(input$fraser)
       message("FRASER uploaded: ", input$fraser$name)
     })
-
-    # Repeat for other inputs if needed
   })
 }
 

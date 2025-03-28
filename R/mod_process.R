@@ -7,45 +7,48 @@
 #' @noRd
 #'
 #' @importFrom shiny NS tagList fluidRow column tags uiOutput plotOutput
+#' @importFrom DT DTOutput
 mod_process_ui <- function(id) {
   ns <- NS(id)
   tagList(
     util_progress_bar(current_step = "Processing"),
-    fluidRow(
-      column(
-        width = 4,
-        tags$div(
-          style = "text-align:left; padding: 30px;",
-          tags$h1("Data Processing Progress"),
+    util_page_layout(
+      nav_id = ns("nav_buttons"),
+      home_id = ns("home_btn"),
 
-          uiOutput(ns("check_samples_ui")),
-          tags$br(),
-          uiOutput(ns("convert_genes_ui")),
-          tags$br(),
-          uiOutput(ns("check_missing_ui")),
-          tags$br(),
-          uiOutput(ns("complete_ui"))
-        )
-      ),
-      column(
-        width = 4,
-        tags$div(
-          style = "padding: 30px",
-          tags$h1("Data Summary"),
-          DT::DTOutput(ns("data_summary"))
-        )
-      ),
-      column(
-        width = 4,
-        tags$div(
-          style = "padding: 30px",
-          tags$h1("Phenotype"),
-          plotOutput(ns("phenotype_plot"))
+      fluidRow(
+        column(
+          width = 4,
+          tags$div(
+            style = "text-align:left; padding: 30px;",
+            tags$h1("Data Processing Progress"),
+            uiOutput(ns("check_samples_ui")),
+            tags$br(),
+            uiOutput(ns("convert_genes_ui")),
+            tags$br(),
+            uiOutput(ns("check_missing_ui")),
+            tags$br(),
+            uiOutput(ns("complete_ui"))
+          )
+        ),
+        column(
+          width = 4,
+          tags$div(
+            style = "padding: 30px",
+            tags$h1("Data Summary"),
+            DTOutput(ns("data_summary"))
+          )
+        ),
+        column(
+          width = 4,
+          tags$div(
+            style = "padding: 30px",
+            tags$h1("Phenotype"),
+            plotOutput(ns("phenotype_plot"))
+          )
         )
       )
-    ),
-    mod_nav_buttons_ui(ns("nav_buttons")),
-    mod_home_button_ui(ns("home_btn"))
+    )
   )
 }
 
@@ -54,6 +57,7 @@ mod_process_ui <- function(id) {
 #' @noRd
 #' @importFrom shiny reactiveVal renderUI renderPlot observeEvent observe req tags
 #' @importFrom shinipsum random_DT random_ggplot
+#' @importFrom DT renderDT
 mod_process_server <- function(id, go_to_parameters, go_to_upload, go_to_index, uploaded_data) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
@@ -65,7 +69,7 @@ mod_process_server <- function(id, go_to_parameters, go_to_upload, go_to_index, 
     # Track which step is complete
     processing_state <- reactiveVal("start")  # start → samples_checked → genes_converted → done
 
-    # --- Progress UI Renderers ---
+    # --- Progress UI Renderer ---
     output$check_samples_ui <- renderUI({
       if (processing_state() %in% c("samples_checked", "genes_converted", "done")) {
         tags$p("✅ Checking sample identifiers... Done")
@@ -100,7 +104,7 @@ mod_process_server <- function(id, go_to_parameters, go_to_upload, go_to_index, 
       }
     })
 
-    output$data_summary <- DT::renderDT({
+    output$data_summary <- renderDT({
       if (processing_state() != "done") {
         return(data.frame(Message = "Processing not yet complete."))
       }
