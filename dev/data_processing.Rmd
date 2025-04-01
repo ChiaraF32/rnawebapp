@@ -139,7 +139,7 @@ Generate and format results tables
 #' @importFrom FRASER results
 generate_results <- function(ods, fds, padj_threshold = 0.05, merged = TRUE) {
   outres<-as.data.frame(OUTRIDER::results(ods, padjCutoff=padj_threshold))
-  frares<-as.data.frame(FRASER::results(fds, padjCutoff=padj_threshold))
+  frares<-as.data.table(FRASER::results(fds, padjCutoff=padj_threshold))
   
   frares <- frares %>%
   dplyr::rename(geneID = hgncSymbol) %>%

@@ -12,11 +12,23 @@ library(tidyr)
 library(ggplot2)
 library(OUTRIDER)
 library(FRASER)
+library(TxDb.Hsapiens.UCSC.hg38.knownGene)
+library(org.Hs.eg.db)
+library(SGSeq)
 ```
 
 ```{r volcplot, message=FALSE}
 OUTRIDER::plotVolcano(ods_hgnc, sampleID = "HP24-0007", xaxis = "zscore", label = aberrant)
 FRASER::plotVolcano(fds, sampleID = "TAM-M1475", type = "theta")
+plotCountCorHeatmap(ods_hgnc, normalized=TRUE, nRowCluster=4)
+plotAberrantPerSample(ods_hgnc, padjCutoff=0.05)
+plotExpressionRank(ods_hgnc, "ABCD3", basePlot=TRUE)
+
+txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
+orgDb <- org.Hs.eg.db
+frares<-as.data.table(FRASER::results(fds))
+plotBamCoverageFromResultTable(fds, result=frares[1,], show_full_gene=TRUE, txdb=txdb, orgDb=orgDb, control_samples="IVCT-53-M")
+##need to specify path to the BAM files
 ```
 
 ```{r gene plot, message=FALSE}
