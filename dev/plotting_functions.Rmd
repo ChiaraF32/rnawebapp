@@ -1,0 +1,71 @@
+---
+title: "Plotting Functions"
+author: "Chiara Folland"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = "/Users/00104561/Library/CloudStorage/OneDrive-UWA/Research/Projects/AIM3_TRANSCRIPTOMICS/app/rnawebapp")
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(OUTRIDER)
+library(FRASER)
+```
+
+```{r volcplot, message=FALSE}
+OUTRIDER::plotVolcano(ods_hgnc, sampleID = "HP24-0007", xaxis = "zscore", label = aberrant)
+FRASER::plotVolcano(fds, sampleID = "TAM-M1475", type = "theta")
+```
+
+```{r gene plot, message=FALSE}
+#' Generate a faceted plot of gene expression for multiple genes
+#'
+#' @param ods An OUTRIDER dataset 
+#' @param genes A character vector of gene symbols or IDs
+#' @param sampleID A sample ID to highlight in red
+#' 
+#' @return A ggplot object with facets for each gene, highlighting the sample
+#' @export
+#'
+#' @importFrom dplyr filter
+#' @importFrom tidyr gather
+#' @importFrom ggplot2 ggplot geom_violin geom_boxplot geom_jitter geom_point facet_wrap theme element_blank labs aes
+
+plot_gene_expression_multi <- function(ods, genes, sampleID) {
+  # Extract and reshape normalized counts
+  counts_norm <- as.data.frame(counts(ods, normalized = TRUE))
+  counts_norm$geneID <- rownames(counts_norm)
+  
+  long_counts <- counts_norm %>%
+    tidyr::gather("sample_ID", "counts", -geneID) %>%
+    dplyr::filter(geneID %in% genes)
+  
+  # Highlighted sample
+  highlight <- dplyr::filter(long_counts, sample_ID == sampleID)
+  other <- dplyr::filter(long_counts, sample_ID != sampleID)
+  
+  # Plot
+  p <- ggplot(other, aes(x = factor(0), y = counts)) +
+    facet_wrap(~geneID, scales = "free_y") +
+    geom_violin(fill = "white") +
+    geom_boxplot(width = 0.3, outlier.shape = NA) +
+    #geom_jitter(color = "darkgrey", size = 1, alpha = 0.8) +
+    geom_point(data = highlight, aes(x = factor(0), y = counts), color = "red", size = 2) +
+    theme(
+      axis.text.x = element_blank(),
+      axis.ticks.x = element_blank(),
+      axis.title.x = element_blank()
+    ) +
+    labs(
+      x = NULL,
+      y = "Expression (normalized counts)",
+      title = paste("Expression for", paste(genes, collapse = ", "))
+    )
+  
+  return(p)
+}
+genes <- c("ACTA1", "ACTA2", "ABCD3")
+plot_gene_expression_multi(ods_hgnc, genes, "OPMD1-13")
+```

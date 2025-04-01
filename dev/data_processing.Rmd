@@ -142,7 +142,7 @@ generate_results <- function(ods, fds, padj_threshold = 0.05, merged = TRUE) {
   frares<-as.data.frame(FRASER::results(fds, padjCutoff=padj_threshold))
   
   frares <- frares %>%
-  rename(geneID = hgncSymbol) %>%
+  dplyr::rename(geneID = hgncSymbol) %>%
   transmute(sampleID, geneID,   
             coord = paste(seqnames, start, end, sep = ":"),
             type, strand, padjust, psiValue, deltaPsi, counts, totalCounts, meanCounts, meanTotalCounts, annotatedJunction)
