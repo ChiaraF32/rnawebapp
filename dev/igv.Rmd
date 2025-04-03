@@ -1,0 +1,57 @@
+---
+title: "igv"
+output: html_document
+---
+
+```{r igv, message=FALSE}
+library(shiny)
+library(igvShiny)
+
+bam_dir <- "/Volumes/PERKINS-LL-001/Sequencing/rnaseq/secondary/nfcore/2024-12-16_GenomicsWA_Realigned/star_salmon"
+addResourcePath("bams", bam_dir)
+
+ui <- fluidPage(
+  titlePanel("Dynamic IGV BAM Loader"),
+  igvShinyOutput("igv"),
+  selectInput("sample", "Select Sample", choices = colnames(fds)),
+  actionButton("load_bam", "Load BAM for Sample")
+)
+
+server <- function(input, output, session) {
+
+  # Step 1: Serve BAM directory
+  addResourcePath("bams", bam_dir)
+
+  # Step 2: Render IGV
+  output$igv <- renderIgvShiny({
+  igvShiny(list(genomeName = "hg38"))
+})
+
+  # Step 3: Load selected BAM on button press
+  observeEvent(input$load_bam, {
+    sample_id <- input$sample
+    bam_path <- colData(fds)[sample_id, "RNA_BAM_FILE"]
+
+    # Check file exists
+    if (!file.exists(bam_path)) {
+      showNotification("BAM file not found!", type = "error")
+      return()
+    }
+
+    # Get just the filename
+    bam_file <- basename(bam_path)
+    bam_index <- paste0(bam_file, ".bai")  # assumes .bam.bai is present
+
+    track <- list(
+      name = sample_id,
+      type = "alignment",
+      format = "bam",
+      url = paste0("bams/", bam_file),
+      indexURL = paste0("bams/", bam_index)
+    )
+
+    session$sendCustomMessage(type = "loadTrack", message = track)
+  })
+}
+shinyApp(ui = ui, server = server)
+```

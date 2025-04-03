@@ -17,6 +17,11 @@ library(org.Hs.eg.db)
 library(SGSeq)
 ```
 
+```{r bamplot, message=FALSE}
+
+```
+
+
 ```{r volcplot, message=FALSE}
 OUTRIDER::plotVolcano(ods_hgnc, sampleID = "HP24-0007", xaxis = "zscore", label = aberrant)
 FRASER::plotVolcano(fds, sampleID = "TAM-M1475", type = "theta")
@@ -24,11 +29,55 @@ plotCountCorHeatmap(ods_hgnc, normalized=TRUE, nRowCluster=4)
 plotAberrantPerSample(ods_hgnc, padjCutoff=0.05)
 plotExpressionRank(ods_hgnc, "ABCD3", basePlot=TRUE)
 
-txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
-orgDb <- org.Hs.eg.db
-frares<-as.data.table(FRASER::results(fds))
-plotBamCoverageFromResultTable(fds, result=frares[1,], show_full_gene=TRUE, txdb=txdb, orgDb=orgDb, control_samples="IVCT-53-M")
-##need to specify path to the BAM files
+```
+
+```{r cortar, message=FALSE}
+
+
+
+```
+
+```{r sashimi}
+library(dasper)
+# Extract exons by transcript
+ref <- exonsBy(txdb, by = "tx", use.names = TRUE)
+
+# use GenomicState to load txdb (GENCODE v31)
+ref <- GenomicState::GenomicStateHub(version = "31", genome = "hg38", filetype = "TxDb")[[1]]
+junctions_processed <- junction_process(junctions_example, ref, types = c("ambig_gene", "unannotated"))
+
+plot_sashimi(junctions = junction_filter(junctions_processed), ref = ref, gene_tx_id = "ENSG00000142156.14", gene_tx_col = "gene_id", sum_func = NULL)
+
+library(SummarizedExperiment)
+library(dasper)
+
+junctions <- rowRanges(fds, type = "psi5")
+seqlevels(junctions) <- sub("^chr", "", seqlevels(junctions))
+seqnames(junctions) <- sub("^chr", "", seqnames(junctions))
+
+# Add metadata
+junctions$gene_id <- junctions$hgncSymbol  # or your gene column
+junctions$case_id <- "HP23-014"            # sample you're plotting
+
+bam_paths <- colData(fds)$RNA_BAM_FILE
+names(bam_paths) <- colData(fds)$sampleID
+
+coverage_paths_case <- bam_paths["HP23-014"]
+coverage_paths_control <- bam_paths[c("IVCT-61Y-F")]
+
+txdb <- makeTxDbFromGFF("~/Library/CloudStorage/OneDrive-UWA/Research/Projects/AIM3_TRANSCRIPTOMICS/app/rnawebapp/data/Homo_sapiens.GRCh38.113.gtf", format = "gtf") 
+
+plot_sashimi(
+  junctions = junctions,
+  ref = txdb,
+  gene_tx_id = entrez_id,
+  gene_tx_col = "gene_id",
+  case_id = "HP23-014",
+  coverage_paths_case = coverage_paths_case,
+  coverage_paths_control = coverage_paths_control,
+  count_label = TRUE
+)
+
 ```
 
 ```{r gene plot, message=FALSE}

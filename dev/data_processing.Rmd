@@ -141,7 +141,7 @@ generate_results <- function(ods, fds, padj_threshold = 0.05, merged = TRUE) {
   outres<-as.data.frame(OUTRIDER::results(ods, padjCutoff=padj_threshold))
   frares<-as.data.table(FRASER::results(fds, padjCutoff=padj_threshold))
   
-  frares <- frares %>%
+  frares <- frares %>% 
   dplyr::rename(geneID = hgncSymbol) %>%
   transmute(sampleID, geneID,   
             coord = paste(seqnames, start, end, sep = ":"),
@@ -159,6 +159,32 @@ generate_results <- function(ods, fds, padj_threshold = 0.05, merged = TRUE) {
 # Generate results tables
 
 results <- generate_results(ods_hgnc, fds)
+
+```
+
+Fix paths to BAM files
+```{r fix-bam-paths, message=FALSE}
+library(Rsamtools)
+
+# Define the new base path
+new_base_path <- "/Volumes/PERKINS-LL-001/Sequencing/rnaseq/secondary/nfcore/2024-12-16_GenomicsWA_Realigned/star_salmon"
+
+# Update the BAM file paths
+colData(ods)$RNA_BAM_FILE <- file.path(
+  new_base_path,
+  basename(colData(ods)$RNA_BAM_FILE)
+)
+
+colData(fds)$RNA_BAM_FILE <- file.path(
+  new_base_path,
+  basename(colData(fds)$RNA_BAM_FILE)
+)
+
+# Reassign proper BamFile objects
+fds_bam_paths <- colData(fds)$RNA_BAM_FILE
+colData(fds)$bamFile <- BamFileList(fds_bam_paths)
+ods_bam_paths <- colData(ods)$RNA_BAM_FILE
+colData(ods)$bamFile <- BamFileList(ods_bam_paths)
 
 ```
 
@@ -196,15 +222,38 @@ summarise_data <- function(ods, fds) {
 
 summarise_data(ods, fds)
 
+geneIDs <- unique(mcols(rowRanges(fds))$hgnc_symbol)
+
 ```
 
 Add in OMIM and GO
 ```{R summary, message=FALSE}
-
+#' Annotate gene-level results with OMIM phenotypes and GO terms
+#'
+#' This function takes a data frame of gene-level results (e.g., from OUTRIDER or FRASER)
+#' and optionally adds OMIM phenotype annotations and Gene Ontology (GO) term annotations.
+#' It uses `org.Hs.eg.db` for OMIM links and `biomaRt` to retrieve GO terms via Ensembl.
+#'
+#' @param results A data.frame containing gene-level results with a column named `geneID` 
+#'        corresponding to HGNC gene symbols (e.g., as used in OUTRIDER or FRASER).
+#' @param add_omim Logical. Whether to annotate genes with OMIM phenotype data. Default is TRUE.
+#' @param omim_file Path to the OMIM phenotype annotation file (TSV format). Default is `"./data/omim-phenotype.txt"`.
+#'        The file must include at least the columns: `OMIM` and `Phenotypes`.
+#' @param add_go Logical. Whether to annotate genes with Gene Ontology (GO) terms. Default is TRUE.
+#' @param go_source The BioMart source for retrieving GO terms. Default is `"ensembl"`.
+#'
+#' @return A data.frame with the original results, plus additional columns:
+#'         - `Phenotypes`: OMIM phenotype(s) associated with each gene (if `add_omim = TRUE`)
+#'         - `GO_TERMS`: GO term descriptions associated with each gene (if `add_go = TRUE`)
+#'
+#' @import dplyr
+#' @import biomaRt
+#' @import org.Hs.eg.db
+#' @export
+#' 
 ## Retrieve OMIM data
 
 annotate_results_with_omim_go <- function(results,
-                                          geneIDs,
                                           add_omim = TRUE,
                                           omim_file = "./data/omim-phenotype.txt",
                                           add_go = TRUE,
@@ -218,6 +267,9 @@ annotate_results_with_omim_go <- function(results,
   # Start with the original results
   annotated <- results
   
+  # Get all gene symbols (HGNC symbols)
+  gene_symbols <- keys(org.Hs.eg.db, keytype = "ENSEMBL")
+  
   # ----- OMIM ANNOTATION -----
   if (add_omim) {
     message("🔍 Annotating with OMIM...")
@@ -226,7 +278,7 @@ annotate_results_with_omim_go <- function(results,
     colnames(phe)[1] <- "OMIM"
     
     cols <- c("SYMBOL", "GENENAME", "OMIM")
-    omim <- select(org.Hs.eg.db, keys = geneIDs, columns = cols, keytype = "ENSEMBL")
+    omim <- select(org.Hs.eg.db, keys = gene_symbols, columns = cols, keytype = "ENSEMBL")
     colnames(omim)[1] <- "ensembl"
     
     mim_phe <- merge(omim, phe, by = "OMIM", all.x = TRUE)
@@ -271,7 +323,6 @@ annotate_results_with_omim_go <- function(results,
 # Assume frares has a column geneID (HGNC symbol) and you have ENSEMBL gene IDs
 fres_annotated <- annotate_results_with_omim_go(
   results = results$frares,
-  geneIDs = geneIDs,   # vector of ENSEMBL IDs
   add_omim = TRUE,
   add_go = TRUE
 )
@@ -279,7 +330,6 @@ fres_annotated <- annotate_results_with_omim_go(
 # OUTRIDER example (with same gene list)
 ores_annotated <- annotate_results_with_omim_go(
   results = results$outres,
-  geneIDs = geneIDs,
   add_omim = TRUE,
   add_go = TRUE
 )
