@@ -5,3 +5,5 @@
 .DS_Store
 .quarto
 ./data/
+data/savedObjects/MUSCLE--v38/*.h5
+data/savedObjects/MUSCLE--v38/*.save.tmp

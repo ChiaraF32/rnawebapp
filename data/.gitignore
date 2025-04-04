@@ -1,0 +1,9 @@
+Homo_sapiens.GRCh38.113.gtf
+MUSCLE_v38.annotated.vcf.gz
+MUSCLE_v38.annotated.vcf.gz.tbi
+MUSCLE_v38_data_table.Rds
+fds-object.RDS
+ods-hgnc.Rds
+ods.Rds
+omim-phenotype.txt
+samplesheet.tsv

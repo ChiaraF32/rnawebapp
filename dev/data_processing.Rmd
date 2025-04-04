@@ -138,22 +138,25 @@ Generate and format results tables
 #' @importFrom OUTRIDER results
 #' @importFrom FRASER results
 generate_results <- function(ods, fds, padj_threshold = 0.05, merged = TRUE) {
-  outres<-as.data.frame(OUTRIDER::results(ods, padjCutoff=padj_threshold))
-  frares<-as.data.table(FRASER::results(fds, padjCutoff=padj_threshold))
+  outres <- as.data.frame(OUTRIDER::results(ods, padjCutoff = padj_threshold))
+  frares <- as.data.table(FRASER::results(fds, padjCutoff = padj_threshold))
   
   frares <- frares %>% 
-  dplyr::rename(geneID = hgncSymbol) %>%
-  transmute(sampleID, geneID,   
-            coord = paste(seqnames, start, end, sep = ":"),
-            type, strand, padjust, psiValue, deltaPsi, counts, totalCounts, meanCounts, meanTotalCounts, annotatedJunction)
-  outres <- outres %>%
-  dplyr::select(sampleID, geneID, padjust, everything())
+    dplyr::rename(geneID = hgncSymbol) %>%
+    transmute(
+      sampleID, geneID,   
+      coord = paste0(seqnames, ":", start, "-", end),
+      type, strand, padjust, psiValue, deltaPsi, counts, totalCounts, meanCounts, meanTotalCounts, annotatedJunction
+    )
   
-  merged <- merge(frares, outres, by.x=c("geneID","sampleID"), by.y=c("geneID","sampleID"), suffixes = c(".fra",".out")) %>%
-    dplyr::select(geneID:sampleID) %>% unique()
+  outres <- outres %>%
+    dplyr::select(sampleID, geneID, padjust, everything())
+  
+  merged <- merge(frares, outres, by.x = c("geneID", "sampleID"), by.y = c("geneID", "sampleID"), suffixes = c(".fra", ".out")) %>%
+    dplyr::select(geneID:sampleID) %>%
+    unique()
   
   return(list(outres = outres, frares = frares, merged = merged))
-  
 }
 
 # Generate results tables

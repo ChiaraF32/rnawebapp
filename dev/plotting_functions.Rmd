@@ -28,56 +28,183 @@ FRASER::plotVolcano(fds, sampleID = "TAM-M1475", type = "theta")
 plotCountCorHeatmap(ods_hgnc, normalized=TRUE, nRowCluster=4)
 plotAberrantPerSample(ods_hgnc, padjCutoff=0.05)
 plotExpressionRank(ods_hgnc, "ABCD3", basePlot=TRUE)
-
 ```
 
 ```{r cortar, message=FALSE}
+BiocManager::install("GenomicRanges")
+BiocManager::install("GenomicFeatures")
+BiocManager::install("GenomicAlignments")
+BiocManager::install("BSgenome.Hsapiens.UCSC.hg38")
+BiocManager::install("BSgenome.Hsapiens.UCSC.hg19")
+BiocManager::install("BSgenome.Hsapiens.NCBI.GRCh38")
 
+##issue with genome compatibility in cortar##
+
+# install.packages("devtools")
+devtools::install_github("kidsneuro-lab/RNA_splice_tool")
+
+library(cortar)
+
+sample <- as.character(results$frares$sampleID[25])
+sample
+
+controls = c("IVCT-43Y-M", "IVCT-38-F")
+control_labels = c("Control1", "Control2")
+gene = "SPTAN1"
+transcript = "NM_001363759"
+bam_dir = "/Volumes/PERKINS-LL-001/Sequencing/rnaseq/secondary/nfcore/2024-12-16_GenomicsWA_Realigned/star_salmon/"
+
+sample_bam <- file.path(bam_dir, paste0(sample, ".markdup.sorted.bam"))
+control_bams <- file.path(bam_dir, paste0(controls, ".markdup.sorted.bam"))
+bam_files <- c(sample_bam, control_bams)
+groups <- c("Patient", control_labels)
+samples <- c(sample, controls)
+
+cortar_df <- data.frame(
+  sampleID = samples,
+  familyID = groups,
+  sampletype = c("test", "", ""),
+  genes = c(gene, "", ""), 
+  transcript = c(transcript, "", ""),
+  bamfile = bam_files
+)
+
+cortar_input <- tempfile(fileext = ".tsv")
+on.exit(unlink(cortar_input), add = TRUE)
+write.table(
+    cortar_df,
+    file = cortar_input,
+    sep = "\t",
+    quote = FALSE,
+    row.names = FALSE,
+    col.names = TRUE
+  )
+  
+  cortar(
+  file = cortar_input,
+  mode = "research",
+  assembly = "hg38",
+  annotation = "1000genomes",
+  paired = TRUE,
+  stranded = 2,
+  output_dir = "./",
+  genelist = gene
+)
 
 
 ```
 
-```{r sashimi}
-library(dasper)
-# Extract exons by transcript
-ref <- exonsBy(txdb, by = "tx", use.names = TRUE)
+```{r sashimi, message=FALSE}
+#' Generate Sashimi Plot (PDF + PNG)
+#'
+#' This function generates a sashimi plot for a given sample using a specified GTF annotation
+#' and a set of BAM files (1 patient + controls). It expands the region of interest, writes
+#' a temporary TSV for `ggsashimi.py`, runs the command, and converts the resulting PDF to PNG
+#' for Shiny visualization.
+#'
+#' @param result_object A list-like object (e.g. from OUTRIDER/FRASER results) containing `frares`
+#'   with fields `sampleID` and `coord`, where `coord` is in the format `"chr:start-end"`.
+#' @param sample_index Integer index indicating which sample (row of `result_object$frares`) to plot.
+#' @param gtf_file Path to the GTF file used for annotation (e.g., `"./data/Homo_sapiens.GRCh38.113.gtf"`).
+#' @param controls Character vector of sample IDs to use as controls (must match BAM filenames).
+#' @param control_labels Character vector of labels corresponding to each control (same length as `controls`).
+#' @param bam_dir Directory containing all BAM files, named as `<sampleID>.markdup.sorted.bam`.
+#' @param output_dir Directory where the output PDF and PNG files should be saved. Default is current directory.
+#' @param padding Number of base pairs to pad upstream and downstream of the target region. Default is 1000.
+#' @param ggsashimi_path Path to the `ggsashimi.py` script. Default assumes it's in the working directory.
+#'
+#' @return A named list containing paths to:
+#' \describe{
+#'   \item{pdf}{The output PDF file of the sashimi plot.}
+#'   \item{png}{The output PNG file converted from the PDF.}
+#' }
+#'
+#' @import magick
+#' @export
+generate_sashimi_plot <- function(
+  result_object,
+  sample_index,
+  gtf_file = "./data/Homo_sapiens.GRCh38.113.gtf",
+  controls = c("IVCT-43Y-M", "IVCT-38-F"),
+  control_labels = c("Control", "Control"),
+  bam_dir = "/Volumes/PERKINS-LL-001/Sequencing/rnaseq/secondary/nfcore/2024-12-16_GenomicsWA_Realigned/star_salmon/",
+  output_dir = ".",
+  padding = 1000,
+  ggsashimi_path = "./ggsashimi.py"
+) {
+  
+  library(ggplot2)
+  library(data.table)
+  library(gridExtra)
+  library(magick)
+  library(pdftools)
+  
+  sample <- as.character(result_object$frares$sampleID[sample_index])
+  region <- as.character(result_object$frares$coord[sample_index])
+  
+  region <- sub("^chr", "", region)
+  region <- sub("^M", "MT", region)
+  
+  region_parts <- strsplit(region, "[:-]")[[1]]
+  chrom <- region_parts[1]
+  start <- as.integer(region_parts[2])
+  end   <- as.integer(region_parts[3])
+  
+  start <- max(1, start - padding)
+  end   <- end + padding
+  region_expanded <- paste0(chrom, ":", start, "-", end)
 
-# use GenomicState to load txdb (GENCODE v31)
-ref <- GenomicState::GenomicStateHub(version = "31", genome = "hg38", filetype = "TxDb")[[1]]
-junctions_processed <- junction_process(junctions_example, ref, types = c("ambig_gene", "unannotated"))
+  sample_bam <- file.path(bam_dir, paste0(sample, ".markdup.sorted.bam"))
+  control_bams <- file.path(bam_dir, paste0(controls, ".markdup.sorted.bam"))
+  bam_files <- c(sample_bam, control_bams)
+  groups <- c("Patient", control_labels)
+  samples <- c(sample, controls)
 
-plot_sashimi(junctions = junction_filter(junctions_processed), ref = ref, gene_tx_id = "ENSG00000142156.14", gene_tx_col = "gene_id", sum_func = NULL)
+  sashimi_df <- data.frame(
+    samples = samples,
+    bam_files = bam_files,
+    groups = groups,
+    stringsAsFactors = FALSE
+  )
 
-library(SummarizedExperiment)
-library(dasper)
+  sashimi_input <- tempfile(fileext = ".tsv")
+  on.exit(unlink(sashimi_input), add = TRUE)
+  write.table(
+    sashimi_df,
+    file = sashimi_input,
+    sep = "\t",
+    quote = FALSE,
+    row.names = FALSE,
+    col.names = FALSE
+  )
 
-junctions <- rowRanges(fds, type = "psi5")
-seqlevels(junctions) <- sub("^chr", "", seqlevels(junctions))
-seqnames(junctions) <- sub("^chr", "", seqnames(junctions))
+  output_pdf <- file.path(output_dir, paste0(sample, "_", region, "_sashimi_plot.pdf"))
+  output_png <- sub("\\.pdf$", ".png", output_pdf)
 
-# Add metadata
-junctions$gene_id <- junctions$hgncSymbol  # or your gene column
-junctions$case_id <- "HP23-014"            # sample you're plotting
+  cmd <- paste(
+    ggsashimi_path,
+    "-b", sashimi_input,
+    "-c", region_expanded,
+    "-g", gtf_file,
+    "-o", output_pdf,
+    "-M 10 -C 3 -O 3 --alpha 0.25 -A median_j",
+    "--base-size=20 --ann-height=3 --height=5 --width=18 --shrink --fix-y-scale"
+  )
 
-bam_paths <- colData(fds)$RNA_BAM_FILE
-names(bam_paths) <- colData(fds)$sampleID
+  system(cmd)
 
-coverage_paths_case <- bam_paths["HP23-014"]
-coverage_paths_control <- bam_paths[c("IVCT-61Y-F")]
+  # Convert to PNG
+  img <- image_read_pdf(output_pdf, density = 150)
+  image_write(img, output_png, format = "png")
 
-txdb <- makeTxDbFromGFF("~/Library/CloudStorage/OneDrive-UWA/Research/Projects/AIM3_TRANSCRIPTOMICS/app/rnawebapp/data/Homo_sapiens.GRCh38.113.gtf", format = "gtf") 
+  return(list(pdf = output_pdf, png = output_png))
+}
 
-plot_sashimi(
-  junctions = junctions,
-  ref = txdb,
-  gene_tx_id = entrez_id,
-  gene_tx_col = "gene_id",
-  case_id = "HP23-014",
-  coverage_paths_case = coverage_paths_case,
-  coverage_paths_control = coverage_paths_control,
-  count_label = TRUE
+plot_path <- generate_sashimi_plot(
+  result_object = results,
+  sample_index = 25
 )
-
+cat("Sashimi plot saved at:", plot_path, "\n")
 ```
 
 ```{r gene plot, message=FALSE}

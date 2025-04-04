@@ -4,54 +4,86 @@ output: html_document
 ---
 
 ```{r igv, message=FALSE}
+# app.R
 library(shiny)
 library(igvShiny)
 
+# 🔁 Set this to your actual BAM directory
 bam_dir <- "/Volumes/PERKINS-LL-001/Sequencing/rnaseq/secondary/nfcore/2024-12-16_GenomicsWA_Realigned/star_salmon"
 addResourcePath("bams", bam_dir)
 
+# 🧠 Optional: Load your FDS object (make sure this runs before launching the app)
+# load("fds.rda") # if needed
+
 ui <- fluidPage(
-  titlePanel("Dynamic IGV BAM Loader"),
-  igvShinyOutput("igv"),
-  selectInput("sample", "Select Sample", choices = colnames(fds)),
-  actionButton("load_bam", "Load BAM for Sample")
+  titlePanel("🧬 IGV BAM Viewer (igvShiny v1.0.5)"),
+  sidebarLayout(
+    sidebarPanel(
+      selectInput("sample", "Select Sample", choices = colnames(fds)),
+      textInput("region", "Genomic region (e.g. chr1:631383-633633)", value = "chr1:631383-633633"),
+      actionButton("load_bam", "Load BAM"),
+      width = 3
+    ),
+    mainPanel(
+      igvShinyOutput("igv"),
+      width = 9
+    )
+  )
 )
 
 server <- function(input, output, session) {
 
-  # Step 1: Serve BAM directory
-  addResourcePath("bams", bam_dir)
+  # 🧬 Define genomeOptions for hg19 (required for v1.0.5)
+  genomeOptions <- list(
+    genomeName = "hg19",
+    dataMode = "localFiles",
+    fasta = list(
+      name = "hg19.fa",
+      fastaURL = "https://s3.amazonaws.com/igv.broadinstitute.org/genomes/hg19.fa",
+      indexURL = "https://s3.amazonaws.com/igv.broadinstitute.org/genomes/hg19.fa.fai"
+    ),
+    annotation = list(
+      name = "gencode.v18.annotation.gtf.gz",
+      format = "gtf",
+      url = "https://s3.amazonaws.com/igv.org.genomes/hg19/gencode.v18.annotation.gtf.gz"
+    ),
+    tracks = list()
+  )
 
-  # Step 2: Render IGV
+  # ✅ IGV view using full genomeOptions (REQUIRED for igvShiny v1.0.5)
   output$igv <- renderIgvShiny({
-  igvShiny(list(genomeName = "hg38"))
-})
+    igvShiny(genomeOptions = genomeOptions)
+  })
 
-  # Step 3: Load selected BAM on button press
+  # ✅ Load BAM track on button click
   observeEvent(input$load_bam, {
     sample_id <- input$sample
     bam_path <- colData(fds)[sample_id, "RNA_BAM_FILE"]
+    bam_file <- basename(bam_path)
+    bai_file <- paste0(bam_file, ".bai")
 
-    # Check file exists
     if (!file.exists(bam_path)) {
-      showNotification("BAM file not found!", type = "error")
+      showNotification("❌ BAM file not found on disk!", type = "error")
       return()
     }
-
-    # Get just the filename
-    bam_file <- basename(bam_path)
-    bam_index <- paste0(bam_file, ".bai")  # assumes .bam.bai is present
 
     track <- list(
       name = sample_id,
       type = "alignment",
       format = "bam",
       url = paste0("bams/", bam_file),
-      indexURL = paste0("bams/", bam_index)
+      indexURL = paste0("bams/", bai_file)
     )
 
     session$sendCustomMessage(type = "loadTrack", message = track)
+
+    # Move to desired region
+    session$sendCustomMessage(
+      type = "showGenomicRegion",
+      message = input$region
+    )
   })
 }
-shinyApp(ui = ui, server = server)
+
+shinyApp(ui, server)
 ```
