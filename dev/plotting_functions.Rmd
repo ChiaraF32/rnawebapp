@@ -204,7 +204,7 @@ plot_path <- generate_sashimi_plot(
   result_object = results,
   sample_index = 25
 )
-cat("Sashimi plot saved at:", plot_path, "\n")
+
 ```
 
 ```{r gene plot, message=FALSE}

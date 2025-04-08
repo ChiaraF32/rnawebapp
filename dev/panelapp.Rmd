@@ -1,0 +1,74 @@
+---
+title: "panelapp"
+output: html_document
+---
+
+```{r panelapp, message=FALSE}
+
+# Function to fetch all available panels (handles pagination)
+
+library(httr)
+library(jsonlite)
+library(purrr)
+library(dplyr)
+
+# Function to resolve the base URL based on user input
+get_panelapp_base_url <- function(region = c("uk", "aus")) {
+  region <- match.arg(region)
+  switch(region,
+         "uk" = "https://panelapp.genomicsengland.co.uk/api/v1/panels/",
+         "aus" = "https://panelapp-aus.org/api/v1/panels/")
+}
+
+# Function to fetch all panels from selected region
+fetch_all_panels <- function(region = c("uk", "aus")) {
+  region <- match.arg(region)
+  url <- get_panelapp_base_url(region)
+  
+  all_panels <- list()
+  current_url <- url
+  
+  repeat {
+    response <- GET(current_url)
+    if (status_code(response) == 200) {
+      content <- fromJSON(content(response, "text"), flatten = TRUE)
+      all_panels <- append(all_panels, list(content$results))
+      if (is.null(content$`next`)) break
+      current_url <- content$`next`
+    } else {
+      stop("Failed to fetch panels: ", status_code(response))
+    }
+  }
+  
+  all_panels <- bind_rows(all_panels)
+  return(all_panels)
+}
+
+# Function to fetch gene symbols for a panel
+get_genes_for_panel <- function(panel_id, region = c("uk", "aus")) {
+  region <- match.arg(region)
+  base_url <- sub("/panels/$", "", get_panelapp_base_url(region))  # Trim the /panels/ path
+  url <- paste0(base_url, "/panels/", panel_id, "/")
+  
+  response <- GET(url)
+  if (status_code(response) == 200) {
+    details <- fromJSON(content(response, "text"), flatten = TRUE)
+    genes <- details$genes %>%
+      mutate(
+        gene_symbol = map_chr(gene_data.gene_symbol, ~paste(.x, collapse = "; "), .default = NA_character_)
+      ) %>%
+      pull(gene_symbol)
+    return(genes)
+  } else {
+    stop("Failed to fetch genes: ", status_code(response))
+  }
+}
+
+all_panels_uk <- fetch_all_panels("uk")
+all_panels_aus <- fetch_all_panels("aus")
+
+```
+
+```{r DisGeNET, message=FALSE}
+
+```
