@@ -34,7 +34,8 @@ app_server <- function(input, output, session) {
                     go_to_parameters = navigate_to(ROUTES$PARAMETERS, page),
                     go_to_upload = navigate_to(ROUTES$UPLOAD, page),
                     go_to_index = navigate_to(ROUTES$INDEX, page),
-                    uploaded_data = uploaded_data)
+                    uploaded_data = uploaded_data,
+                    current_page = page)
   mod_parameters_server("parameters_1",
                         go_to_individual_res = navigate_to(ROUTES$INDIVIDUAL_RES, page),
                         go_to_cohort_res = navigate_to(ROUTES$COHORT_RES, page),

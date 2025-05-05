@@ -32,7 +32,7 @@ golem_add_external_resources <- function() {
     tags$link(rel = "shortcut icon", href = "dna-medical-svgrepo-com.png"),
 
     # Custom CSS styles
-    tags$link(rel = "stylesheet", type = "text/css", href = "buttons.css"),
-    tags$link(rel = "stylesheet", type = "text/css", href = "progress-nav.css")
+    tags$link(rel = "stylesheet", type = "text/css", href = "www/buttons.css"),
+    tags$link(rel = "stylesheet", type = "text/css", href = "www/progress-nav.css")
   )
 }

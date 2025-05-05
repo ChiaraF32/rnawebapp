@@ -44,7 +44,7 @@ mod_parameters_server <- function(id, go_to_individual_res, go_to_cohort_res, go
     }
 
     #Buttons
-    mod_nav_buttons_server("nav_buttons", next_page = go_to_results, previous_page = go_to_upload)
+    mod_nav_buttons_server("nav_buttons", next_page = go_to_results, previous_page = go_to_processing)
     mod_home_button_server("home_btn", go_to_index = go_to_index)
 
     # Conditional sample selection

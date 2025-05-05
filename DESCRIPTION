@@ -11,11 +11,28 @@ License: What license is it under?
 URL: https://github.com/ChiaraF32/rnawebapp.git
 BugReports: https://github.com/ChiaraF32/rnawebapp.git/issues
 Imports: 
+    annotables,
+    biomaRt,
     config,
+    data.table,
+    dplyr,
     DT,
+    FRASER,
+    ggplot2,
     golem,
+    gridExtra,
+    httr,
+    jsonlite,
+    magick,
+    org.Hs.eg.db,
+    OUTRIDER,
+    pdftools,
+    purrr,
+    Rsamtools,
     shinipsum,
     shiny,
+    SummarizedExperiment,
+    tidyr,
     utils
 Suggests: 
     spelling,

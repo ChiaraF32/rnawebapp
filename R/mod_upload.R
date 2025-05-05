@@ -21,7 +21,8 @@ mod_upload_ui <- function(id) {
       fileInput(ns("outrider"), "2. Upload OUTRIDER Dataset"),
       fileInput(ns("fraser"), "3. Upload FRASER Dataset"),
       fileInput(ns("vcf"), "4. Upload RNA Variant Calls"),
-      fileInput(ns("fusions"), "5. Upload RNA SV/Fusion Calls")
+      fileInput(ns("fusions"), "5. Upload RNA SV/Fusion Calls"),
+      textInput(ns("bam_dir"), "6. Specify BAM File Directory Path", placeholder = "/path/to/bams/")
     )
   )
 }
@@ -50,6 +51,11 @@ mod_upload_server <- function(id, go_to_processing, go_to_index, uploaded_data){
     observeEvent(input$fraser, {
       req(input$fraser)
       uploaded_data$fraser <- readRDS(input$fraser$datapath)
+    })
+
+    observeEvent(input$bam_dir, {
+      req(input$bam_dir)
+      uploaded_data$bam_dir <- input$bam_dir
     })
 
     # Optional: observe file uploads for debug or processing
