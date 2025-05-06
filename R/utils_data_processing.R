@@ -86,6 +86,7 @@ fixFdsH5Paths <- function(fds,
 #' @export
 #'
 #' @importFrom dplyr select rename transmute filter
+#' @importFrom data.table as.data.table
 #' @importFrom OUTRIDER results
 #' @importFrom FRASER results
 generate_results <- function(ods, fds, padj_threshold = 0.05, merged = TRUE) {
@@ -131,9 +132,9 @@ update_bam_paths <- function(object, new_base_path) {
   }
 
   # Update BAM paths
-  updated_bam_paths <- file.path(new_base_path, basename(colData(object)$RNA_BAM_FILE))
-  colData(object)$RNA_BAM_FILE <- updated_bam_paths
-  colData(object)$bamFile <- Rsamtools::BamFileList(updated_bam_paths)
+  updated_bam_paths <- file.path(new_base_path, basename(SummarizedExperiment::colData(object)$RNA_BAM_FILE))
+  SummarizedExperiment::colData(object)$RNA_BAM_FILE <- updated_bam_paths
+  SummarizedExperiment::colData(object)$bamFile <- Rsamtools::BamFileList(updated_bam_paths)
 
   return(object)
 }
@@ -187,9 +188,9 @@ summarise_data <- function(ods, fds) {
 #'         - `Phenotypes`: OMIM phenotype(s) associated with each gene (if `add_omim = TRUE`)
 #'         - `GO_TERMS`: GO term descriptions associated with each gene (if `add_go = TRUE`)
 #'
-#' @import dplyr
-#' @import biomaRt
-#' @import org.Hs.eg.db
+#' @importFrom dplyr group_by summarise %>%
+#' @importFrom biomaRt useMart getBM keys select
+#' @importFrom org.Hs.eg.db org.Hs.eg.db
 #' @export
 #'
 ## Retrieve OMIM data
@@ -199,19 +200,11 @@ annotate_results_with_omim_go <- function(results,
                                           omim_file = system.file("extdata", "omim-phenotype.txt", package = "rnawebapp"),
                                           add_go = TRUE,
                                           go_source = "ensembl") {
-  #Load packages
-
-  library(dplyr)
-  library(biomaRt)
-  library(org.Hs.eg.db)
 
   # Start with the original results
   annotated <- results
 
-  # Get all gene symbols (HGNC symbols)
-  gene_symbols <- keys(org.Hs.eg.db, keytype = "ENSEMBL")
-
-  # ----- OMIM ANNOTATION -----
+    # ----- OMIM ANNOTATION -----
   if (add_omim) {
     message("🔍 Annotating with OMIM...")
 
@@ -219,7 +212,11 @@ annotate_results_with_omim_go <- function(results,
     colnames(phe)[1] <- "OMIM"
 
     cols <- c("SYMBOL", "GENENAME", "OMIM")
-    omim <- select(org.Hs.eg.db, keys = gene_symbols, columns = cols, keytype = "ENSEMBL")
+
+    # Get all gene symbols (HGNC symbols)
+    gene_symbols <- keys(org.Hs.eg.db, keytype = "ENSEMBL")
+
+    omim <- biomaRt::select(org.Hs.eg.db, keys = gene_symbols, columns = cols, keytype = "ENSEMBL")
     colnames(omim)[1] <- "ensembl"
 
     mim_phe <- merge(omim, phe, by = "OMIM", all.x = TRUE)
@@ -259,5 +256,38 @@ annotate_results_with_omim_go <- function(results,
   }
 
   return(annotated)
+}
+
+#' Plot phenotype distribution
+#'
+#' @description Creates a bar plot showing the count of each phenotype in the samplesheet.
+#'
+#' @param samplesheet A data.frame containing a column named 'PHENOTYPE'
+#'
+#' @return A ggplot2 object showing phenotype counts
+#' @export
+#'
+#' @importFrom ggplot2 ggplot aes geom_bar theme_minimal labs element_text
+plot_phenotype_distribution <- function(samplesheet) {
+  if (!"PHENOTYPE" %in% colnames(samplesheet)) {
+    stop(paste0(
+      "The samplesheet must contain a 'PHENOTYPE' column. Found columns: ",
+      paste(colnames(samplesheet), collapse = ", ")
+    ))
+  }
+
+  ggplot(samplesheet, aes(x = PHENOTYPE)) +
+    geom_bar(fill = "steelblue") +
+    theme_minimal() +
+    theme(
+      axis.text.x = element_text(size = 12, angle = 45, hjust = 1),
+      axis.text.y = element_text(size = 12),
+      axis.title = element_text(size = 13)
+    ) +
+    labs(
+      title = "",
+      x = "Phenotype",
+      y = "Count"
+    )
 }
 

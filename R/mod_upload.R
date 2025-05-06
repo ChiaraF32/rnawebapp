@@ -40,7 +40,7 @@ mod_upload_server <- function(id, go_to_processing, go_to_index, uploaded_data){
 
     observeEvent(input$samplesheet, {
       req(input$samplesheet)
-      uploaded_data$samplesheet <- read.csv(input$samplesheet$datapath)
+      uploaded_data$samplesheet <- read.table(input$samplesheet$datapath, header = TRUE)
     })
 
     observeEvent(input$outrider, {

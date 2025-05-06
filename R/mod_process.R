@@ -64,12 +64,14 @@ mod_process_ui <- function(id) {
 #' @importFrom shiny reactiveVal renderUI renderPlot observeEvent observe req tags
 #' @importFrom shinipsum random_DT random_ggplot
 #' @importFrom DT renderDT
+#' @importFrom later later
 mod_process_server <- function(id, go_to_parameters, go_to_upload, go_to_index, uploaded_data, current_page) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
 
     # Declare reactive values
     summary_table <- reactiveVal(data.frame())
+    phenotype_chart <- reactiveVal()
     results <- reactiveVal(list())
     annotated_results <- reactiveVal()
     processing_state <- reactiveVal("start")  # start → samples_checked → genes_converted → bams_corrected → fraser_corrected → results_calculated → done
@@ -82,66 +84,74 @@ mod_process_server <- function(id, go_to_parameters, go_to_upload, go_to_index, 
       req(current_page() == ROUTES$PROCESSING)
 
       message("📍 Navigated to Processing page — starting processing.")
-      processing_state("start")
+
+      samplesheet <- uploaded_data$samplesheet
+      outrider <- uploaded_data$outrider
+      fraser <- uploaded_data$fraser
+
+      later::later(function() {
+        if (!is.null(samplesheet) &&
+            !is.null(outrider) &&
+            !is.null(fraser)) {
+
+          message("✅ All inputs detected. Starting Step 1...")
+
+          summary_table(summarise_data(outrider, fraser))
+          phenotype_chart(plot_phenotype_distribution(samplesheet))
+          processing_state("samples_checked")
+        } else {
+          showNotification("Missing input data!", type = "error")
+        }
+      }, delay = 0.1)
     })
 
     # --- Progress UI Renderer ---
     output$check_samples_ui <- renderUI({
-      if (processing_state() %in% c("samples_checked", "genes_converted", "bams_corrected", "fraser_corrected", "results_calculated", "done")) {
-        tags$p("✅ Checking sample identifiers... Done")
-      } else {
-        tags$p("⏳ Checking sample identifiers...")
-      }
-    })
+      render_step_ui(
+        step_name = "Checking sample identifiers",
+        completed_states = c("samples_checked", "genes_converted", "bams_corrected", "fraser_corrected", "results_calculated", "done"),
+        current_state = processing_state()
+        )
+      })
 
     output$convert_genes_ui <- renderUI({
-      if (processing_state() %in% c("genes_converted", "bams_corrected", "fraser_corrected", "results_calculated", "done")) {
-        tags$p("✅ Converting gene names... Done")
-      } else if (processing_state() == "samples_checked") {
-        tags$p("⏳ Converting gene names...")
-      } else {
-        tags$p("⏹️ Converting gene names... Waiting")
-      }
+      render_step_ui(
+        step_name = "Converting gene names",
+        completed_states = c("genes_converted", "bams_corrected", "fraser_corrected", "results_calculated", "done"),
+        current_state = processing_state()
+      )
     })
 
     output$fix_bam_paths_ui <- renderUI({
-      if (processing_state() %in% c("bams_corrected", "fraser_corrected", "results_calculated", "done")) {
-        tags$p("✅ Correcting BAM paths... Done")
-      } else if (processing_state() == "genes_converted") {
-        tags$p("⏳ Correcting BAM paths...")
-      } else {
-        tags$p("⏹️ Correcting BAM paths... Waiting")
-      }
+      render_step_ui(
+        step_name = "Correcting BAM paths",
+        completed_states = c("bams_corrected", "fraser_corrected", "results_calculated", "done"),
+        current_state = processing_state()
+      )
     })
 
     output$fix_fraser_paths_ui <- renderUI({
-      if (processing_state() %in% c("fraser_corrected", "results_calculated", "done")) {
-        tags$p("✅ Correcting FRASER paths... Done")
-      } else if (processing_state() == "bams_corrected") {
-        tags$p("⏳ Correcting FRASER paths...")
-      } else {
-        tags$p("⏹️ Correcting FRASER paths... Waiting")
-      }
+      render_step_ui(
+        step_name = "Correcting FRASER paths",
+        completed_states = c("fraser_corrected", "results_calculated", "done"),
+        current_state = processing_state()
+      )
     })
 
     output$calculate_results_ui <- renderUI({
-      if (processing_state() %in% c("results_calculated", "done")) {
-        tags$p("✅ OUTRIDER & FRASER Results Calculated... Done")
-      } else if (processing_state() == "fraser_corrected") {
-        tags$p("⏳ Calculating OUTRIDER & FRASER Results...")
-      } else {
-        tags$p("⏹️ Calculating OUTRIDER & FRASER Results... Waiting")
-      }
+      render_step_ui(
+        step_name = "OUTRIDER & FRASER Results Calculated",
+        completed_states = c("results_calculated", "done"),
+        current_state = processing_state()
+      )
     })
 
     output$annotate_results_ui <- renderUI({
-      if (processing_state() %in% c("done")) {
-        tags$p("✅ OUTRIDER & FRASER Results Annotated... Done")
-      } else if (processing_state() == "results_calculated") {
-        tags$p("⏳ Annotating OUTRIDER & FRASER Results...")
-      } else {
-        tags$p("⏹️ Annotating OUTRIDER & FRASER Results... Waiting")
-      }
+      render_step_ui(
+        step_name = "OUTRIDER & FRASER Results Annotated",
+        completed_states = c("done"),
+        current_state = processing_state()
+      )
     })
 
     output$complete_ui <- renderUI({
@@ -159,37 +169,30 @@ mod_process_server <- function(id, go_to_parameters, go_to_upload, go_to_index, 
 
     output$phenotype_plot <- renderPlot({
       req(processing_state() == "done")
-      shinipsum::random_ggplot("bar")
+      req(phenotype_chart())
+      phenotype_chart()
     })
 
     # --- Observe uploaded_data and trigger steps ---
-
-    ## sample summary
-    observe({
-      req(processing_state() == "start")
-      req(uploaded_data$samplesheet, uploaded_data$outrider, uploaded_data$fraser)
-      message("✅ All inputs detected. Starting Step 1...")
-
-      # Summarise which data is available for each sample
-      summary_table(summarise_data(uploaded_data$outrider, uploaded_data$fraser))
-
-      # Update processing state
-      processing_state("samples_checked")
-    })
 
     ## change ensembl id to hgnc for outrider
     observeEvent(processing_state(), {
       req(uploaded_data$outrider, uploaded_data$fraser)
       if (processing_state() == "samples_checked") {
 
-        # Annotate Ensembl IDs with HGNC
-        annotated_ods <- annotate_ensembl_ids(uploaded_data$outrider)
+        outrider <- uploaded_data$outrider
 
-        # Save back into uploaded_data
-        uploaded_data$outrider <- annotated_ods
+        #add delay function
+        later::later(function() {
+          # Annotate Ensembl IDs with HGNC
+          annotated_ods <- annotate_ensembl_ids(outrider)
 
-        # Update processing state
-        processing_state("genes_converted")
+          # Save back into uploaded_data
+          uploaded_data$outrider <- annotated_ods
+
+          # Update processing state
+          processing_state("genes_converted")
+        }, delay = 0.1)
       }
     }, ignoreInit = TRUE)
 
@@ -198,16 +201,23 @@ mod_process_server <- function(id, go_to_parameters, go_to_upload, go_to_index, 
       req(uploaded_data$outrider, uploaded_data$fraser, uploaded_data$bam_dir)
       if (processing_state() == "genes_converted") {
 
-        #Fix paths to BAM files
-        outrider_fixed <- update_bam_paths(uploaded_data$outrider, uploaded_data$bam_dir)
-        fraser_fixed <- update_bam_paths(uploaded_data$fraser, uploaded_data$bam_dir)
+        outrider <- uploaded_data$outrider
+        fraser <- uploaded_data$fraser
+        bam_dir <- uploaded_data$bam_dir
 
-        # Save back to uploaded date
-        uploaded_data$outrider <- outrider_fixed
-        uploaded_data$fraser <- fraser_fixed
+        later::later(function() {
 
-        # Update processing state
-        processing_state("bams_corrected")
+          #Fix paths to BAM files
+          outrider_fixed <- update_bam_paths(outrider, bam_dir)
+          fraser_fixed <- update_bam_paths(fraser, bam_dir)
+
+          # Save back to uploaded date
+          uploaded_data$outrider <- outrider_fixed
+          uploaded_data$fraser <- fraser_fixed
+
+          # Update processing state
+          processing_state("bams_corrected")
+        }, delay = 0.1)
       }
     }, ignoreInit = TRUE)
 
@@ -216,14 +226,19 @@ mod_process_server <- function(id, go_to_parameters, go_to_upload, go_to_index, 
       req(uploaded_data$fraser)
       if (processing_state() == "bams_corrected") {
 
-        # Fix paths to fraser objects
-        fds_fixed <- fixFdsH5Paths(uploaded_data$fraser)
+        fraser <- uploaded_data$fraser
 
-        # Save back to uploaded data
-        uploaded_data$fraser <- fds_fixed
+        later::later(function() {
 
-        # Update processing state
-        processing_state("fraser_corrected")
+          # Fix paths to fraser objects
+          fds_fixed <- fixFdsH5Paths(fraser)
+
+          # Save back to uploaded data
+          uploaded_data$fraser <- fds_fixed
+
+          # Update processing state
+          processing_state("fraser_corrected")
+        }, delay = 0.1)
       }
     }, ignoreInit = TRUE)
 
@@ -232,34 +247,44 @@ mod_process_server <- function(id, go_to_parameters, go_to_upload, go_to_index, 
       req(uploaded_data$outrider, uploaded_data$fraser)
       if (processing_state() == "fraser_corrected") {
 
-        # Calculate fraser and outrider results
-        results(generate_results(uploaded_data$outrider, uploaded_data$fraser))
-        processing_state("results_calculated")
+        outrider <- uploaded_data$outrider
+        fraser <- uploaded_data$fraser
+
+        later::later(function() {
+
+          # Calculate fraser and outrider results
+          results(generate_results(outrider, fraser))
+          processing_state("results_calculated")
+        }, delay = 0.1)
       }
     }, ignoreInit = TRUE)
 
     observeEvent(processing_state(), {
       if (processing_state() == "results_calculated") {
-        req(results())
 
-        # Annotate fraser and outrider results
-        fres_annotated <- annotate_results_with_omim_go(
-          results = results()$frares,
-          add_omim = TRUE,
-          add_go = TRUE
-        )
+        res <- results()
 
-        # OUTRIDER example (with same gene list)
-        ores_annotated <- annotate_results_with_omim_go(
-          results = results()$outres,
-          add_omim = TRUE,
-          add_go = TRUE
-        )
+        later::later(function() {
 
-        annotated_results(list(frares = fres_annotated, outres = ores_annotated))
+          # Annotate fraser and outrider results
+          fres_annotated <- annotate_results_with_omim_go(
+            results = res$frares,
+            add_omim = TRUE,
+            add_go = TRUE
+          )
 
-        # Update processing state
-        processing_state("done")
+          # OUTRIDER example (with same gene list)
+          ores_annotated <- annotate_results_with_omim_go(
+            results = res$outres,
+            add_omim = TRUE,
+            add_go = TRUE
+          )
+
+          annotated_results(list(frares = fres_annotated, outres = ores_annotated))
+
+          # Update processing state
+          processing_state("done")
+        }, delay = 0.1)
       }
     }, ignoreInit = TRUE)
   })
