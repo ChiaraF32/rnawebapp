@@ -104,18 +104,25 @@ generate_sashimi_plot <- function(
   return(list(pdf = output_pdf, png = output_png))
 }
 
-#' Generate a faceted plot of gene expression for multiple genes
+#' Generate a faceted violin-boxplot of gene expression across samples
 #'
-#' @param ods An OUTRIDER dataset
-#' @param genes A character vector of gene symbols or IDs
-#' @param sampleID A sample ID to highlight in red
+#' @description
+#' This function plots normalized expression values for one or more genes from an OUTRIDER dataset
+#' across all samples. Each gene is displayed in a separate facet. A specified sample is highlighted
+#' in red for easy comparison.
 #'
-#' @return A ggplot object with facets for each gene, highlighting the sample
+#' @param ods An OUTRIDER dataset (SummarizedExperiment object)
+#' @param genes A character vector of gene symbols or Ensembl IDs to plot
+#' @param sampleID A character string specifying the sample ID to highlight
+#'
+#' @return A ggplot2 object showing expression distributions with violin and boxplots, faceted by gene
 #' @export
 #'
 #' @importFrom dplyr filter
 #' @importFrom tidyr gather
-#' @importFrom ggplot2 ggplot geom_violin geom_boxplot geom_jitter geom_point facet_wrap theme element_blank labs aes
+#' @importFrom ggplot2 ggplot geom_violin geom_boxplot geom_point facet_wrap theme element_blank labs aes
+#' @importFrom SummarizedExperiment rownames
+#' @importFrom OUTRIDER counts
 
 plot_gene_expression_multi <- function(ods, genes, sampleID) {
   # Extract and reshape normalized counts

@@ -18,9 +18,9 @@ mod_parameters_ui <- function(id) {
         style = "text-align:left; padding: 30px;",
         tags$h1("Choose Analysis Parameters"),
         checkboxGroupInput(ns("analysis_type"), "Analysis Type", selected = NULL, choices = c("Individual", "Cohort")),
-        uiOutput(ns("sample_selection")),
-        checkboxGroupInput(ns("results"), "Results to Display", selected = NULL, choices = c("Aberrant Expression", "Aberrant Splicing", "RNA Variant Calls", "RNA Fusions / SVs")),
-        uiOutput(ns("alignment_upload"))
+        #uiOutput(ns("sample_selection")),
+        checkboxGroupInput(ns("results"), "Results to Display", selected = NULL, choices = c("Aberrant Expression", "Aberrant Splicing", "RNA Variant Calls", "RNA Fusions / SVs"))
+        #uiOutput(ns("alignment_upload"))
       )
     )
   )
@@ -46,24 +46,6 @@ mod_parameters_server <- function(id, go_to_individual_res, go_to_cohort_res, go
     #Buttons
     mod_nav_buttons_server("nav_buttons", next_page = go_to_results, previous_page = go_to_processing)
     mod_home_button_server("home_btn", go_to_index = go_to_index)
-
-    # Conditional sample selection
-    output$sample_selection <- renderUI({
-      if ("Individual" %in% input$analysis_type) {
-        selectInput(ns("samples"), "Select Samples", choices = c("gene1", "gene2", "gene3"), multiple = TRUE)
-      } else {
-        NULL
-      }
-    })
-
-    # Condition Alignment Upload
-    output$alignment_upload <- renderUI({
-      if ("Individual" %in% input$analysis_type) {
-        fileInput(ns("alignment_file"), "Upload Alignment File", multiple = TRUE)
-      } else {
-        NULL
-      }
-    })
   })
 }
 
@@ -73,3 +55,23 @@ mod_parameters_server <- function(id, go_to_individual_res, go_to_cohort_res, go
 
 ## To be copied in the server
 # mod_parameters_server("parameters_1")
+
+
+#    # Conditional sample selection
+#output$sample_selection <- renderUI({
+#  if ("Individual" %in% input$analysis_type) {
+#    req(uploaded_data$samplesheet)
+#    selectInput(ns("samples"), "Select Samples", choices = uploaded_data$samplesheet$RNA_ID, multiple = TRUE)
+#  } else {
+#    NULL
+#  }
+#})
+
+# Condition Alignment Upload
+#output$alignment_upload <- renderUI({
+#  if (!is.null(input$analysis_type) && "Individual" %in% input$analysis_type) {
+#    fileInput(ns("alignment_file"), "Upload Alignment File", multiple = TRUE)
+#  } else {
+#    NULL
+#  }
+#})

@@ -25,9 +25,9 @@ mod_cohort_res_ui <- function(id) {
         fluidRow(
           column(4,
                  tags$h2("Cohort Gene Expression"),
-                 selectInput(ns("select_phenotype"), "Choose Phenotype", choices = c("Myopathy", "Neuropathy", "Ataxia")),
-                 selectInput(ns("select_gene"), "Choose Gene(s)", choices = c("Gene1", "Gene2", "Gene3")),
-                 selectInput(ns("select_patient"), "Select Sample", choices = c("sample1", "sample2", "sample3"))),
+                 selectInput(ns("select_phenotype"), "Choose Phenotype from PanelApp", choices = NULL, multiple = TRUE),
+                 uiOutput(ns("select_gene")),
+                 uiOutput(ns("select_sample"))),
           column(8, plotOutput(ns("gene_plot")))
         ),
 
@@ -62,20 +62,79 @@ mod_cohort_res_ui <- function(id) {
 #' @importFrom shiny observeEvent renderPlot
 #' @importFrom DT renderDT
 #' @importFrom shinipsum random_DT random_ggplot
-mod_cohort_res_server <- function(id, go_to_parameters, go_to_index, uploaded_data){
+#' @importFrom SummarizedExperiment rownames
+mod_cohort_res_server <- function(id, go_to_parameters, go_to_index, uploaded_data, processed_data){
   moduleServer(id, function(input, output, session){
     ns <- session$ns
+
+    panels <- reactiveVal()
 
     observeEvent(input$return, {
       go_to_parameters()})
 
     mod_home_button_server("home_btn", go_to_index = go_to_index)
 
-    output$gene_plot <- renderPlot(random_ggplot(type = "point"))
+    observe({
+      all_panels <- fetch_all_panels("uk")
+      panels(all_panels)
 
-    output$outrider_res <- renderDT(random_DT(nrow = 6, ncol = 9, type = "numchar"))
+      updateSelectInput(
+        session,
+        inputId = "select_phenotype",
+        choices = setNames(all_panels$id, all_panels$name)
+      )
+    })
 
-    output$fraser_res <- renderDT(random_DT(nrow = 6, ncol = 9, type = "numchar"))
+    phenotype_genes <- reactive({
+      req(input$select_phenotype)
+      unique(unlist(
+        lapply(input$select_phenotype, function(panel_id) {
+          get_genes_for_panel(panel_id, region = "uk")
+        })
+      ))
+    })
+
+    output$select_sample <- renderUI({
+      req(uploaded_data$samplesheet)
+      selectInput(
+        ns("select_sample"),
+        "Choose Sample",
+        choices = uploaded_data$samplesheet$RNA_ID
+      )
+    })
+
+    output$select_gene <- renderUI({
+      req(processed_data$outrider)
+      selectInput(
+        ns("select_gene"),
+        "Choose Gene(s)",
+        choices = rownames(processed_data$outrider),
+        multiple = TRUE
+        )
+    })
+
+    output$gene_plot <- renderPlot({
+      req(processed_data$outrider)
+      req(input$select_gene)
+      req(input$select_sample)
+      plot_gene_expression_multi(processed_data$outrider, union(input$select_gene, phenotype_genes()), input$select_sample)
+    })
+
+    output$fraser_res <- renderDT({
+      req(processed_data$annotated_results)
+      req(is.list(processed_data$annotated_results))
+      req(input$select_gene)
+      filtered_data <- dplyr::filter(processed_data$annotated_results$frares, geneID %in% union(input$select_gene, phenotype_genes()))
+      util_nowrap_dt(filtered_data, nowrap_columns = c("GO_TERMS", "Phenotypes"))
+    })
+
+    output$outrider_res <- renderDT({
+      req(processed_data$annotated_results)
+      req(is.list(processed_data$annotated_results))
+      req(input$select_gene)
+      filtered_data <- dplyr::filter(processed_data$annotated_results$outres, geneID %in% union(input$select_gene, phenotype_genes()))
+      util_nowrap_dt(filtered_data, nowrap_columns = c("GO_TERMS", "Phenotypes"))
+    })
   })
 }
 

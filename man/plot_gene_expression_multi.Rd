@@ -2,20 +2,22 @@
 % Please edit documentation in R/utils_plotting.R
 \name{plot_gene_expression_multi}
 \alias{plot_gene_expression_multi}
-\title{Generate a faceted plot of gene expression for multiple genes}
+\title{Generate a faceted violin-boxplot of gene expression across samples}
 \usage{
 plot_gene_expression_multi(ods, genes, sampleID)
 }
 \arguments{
-\item{ods}{An OUTRIDER dataset}
+\item{ods}{An OUTRIDER dataset (SummarizedExperiment object)}
 
-\item{genes}{A character vector of gene symbols or IDs}
+\item{genes}{A character vector of gene symbols or Ensembl IDs to plot}
 
-\item{sampleID}{A sample ID to highlight in red}
+\item{sampleID}{A character string specifying the sample ID to highlight}
 }
 \value{
-A ggplot object with facets for each gene, highlighting the sample
+A ggplot2 object showing expression distributions with violin and boxplots, faceted by gene
 }
 \description{
-Generate a faceted plot of gene expression for multiple genes
+This function plots normalized expression values for one or more genes from an OUTRIDER dataset
+across all samples. Each gene is displayed in a separate facet. A specified sample is highlighted
+in red for easy comparison.
 }

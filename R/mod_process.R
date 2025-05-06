@@ -65,7 +65,7 @@ mod_process_ui <- function(id) {
 #' @importFrom shinipsum random_DT random_ggplot
 #' @importFrom DT renderDT
 #' @importFrom later later
-mod_process_server <- function(id, go_to_parameters, go_to_upload, go_to_index, uploaded_data, current_page) {
+mod_process_server <- function(id, go_to_parameters, go_to_upload, go_to_index, uploaded_data, processed_data, current_page) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
 
@@ -73,7 +73,6 @@ mod_process_server <- function(id, go_to_parameters, go_to_upload, go_to_index, 
     summary_table <- reactiveVal(data.frame())
     phenotype_chart <- reactiveVal()
     results <- reactiveVal(list())
-    annotated_results <- reactiveVal()
     processing_state <- reactiveVal("start")  # start → samples_checked → genes_converted → bams_corrected → fraser_corrected → results_calculated → done
 
     #Buttons
@@ -188,7 +187,7 @@ mod_process_server <- function(id, go_to_parameters, go_to_upload, go_to_index, 
           annotated_ods <- annotate_ensembl_ids(outrider)
 
           # Save back into uploaded_data
-          uploaded_data$outrider <- annotated_ods
+          processed_data$outrider <- annotated_ods
 
           # Update processing state
           processing_state("genes_converted")
@@ -198,10 +197,10 @@ mod_process_server <- function(id, go_to_parameters, go_to_upload, go_to_index, 
 
     ## change the BAM paths
     observeEvent(processing_state(), {
-      req(uploaded_data$outrider, uploaded_data$fraser, uploaded_data$bam_dir)
+      req(processed_data$outrider, uploaded_data$fraser, uploaded_data$bam_dir)
       if (processing_state() == "genes_converted") {
 
-        outrider <- uploaded_data$outrider
+        outrider <- processed_data$outrider
         fraser <- uploaded_data$fraser
         bam_dir <- uploaded_data$bam_dir
 
@@ -212,8 +211,8 @@ mod_process_server <- function(id, go_to_parameters, go_to_upload, go_to_index, 
           fraser_fixed <- update_bam_paths(fraser, bam_dir)
 
           # Save back to uploaded date
-          uploaded_data$outrider <- outrider_fixed
-          uploaded_data$fraser <- fraser_fixed
+          processed_data$outrider <- outrider_fixed
+          processed_data$fraser <- fraser_fixed
 
           # Update processing state
           processing_state("bams_corrected")
@@ -223,10 +222,10 @@ mod_process_server <- function(id, go_to_parameters, go_to_upload, go_to_index, 
 
     ## change the fraser paths
     observeEvent(processing_state(), {
-      req(uploaded_data$fraser)
+      req(processed_data$fraser)
       if (processing_state() == "bams_corrected") {
 
-        fraser <- uploaded_data$fraser
+        fraser <- processed_data$fraser
 
         later::later(function() {
 
@@ -234,7 +233,7 @@ mod_process_server <- function(id, go_to_parameters, go_to_upload, go_to_index, 
           fds_fixed <- fixFdsH5Paths(fraser)
 
           # Save back to uploaded data
-          uploaded_data$fraser <- fds_fixed
+          processed_data$fraser <- fds_fixed
 
           # Update processing state
           processing_state("fraser_corrected")
@@ -244,11 +243,11 @@ mod_process_server <- function(id, go_to_parameters, go_to_upload, go_to_index, 
 
     ## calculate results
     observeEvent(processing_state(), {
-      req(uploaded_data$outrider, uploaded_data$fraser)
+      req(processed_data$outrider, processed_data$fraser)
       if (processing_state() == "fraser_corrected") {
 
-        outrider <- uploaded_data$outrider
-        fraser <- uploaded_data$fraser
+        outrider <- processed_data$outrider
+        fraser <- processed_data$fraser
 
         later::later(function() {
 
@@ -280,7 +279,7 @@ mod_process_server <- function(id, go_to_parameters, go_to_upload, go_to_index, 
             add_go = TRUE
           )
 
-          annotated_results(list(frares = fres_annotated, outres = ores_annotated))
+          processed_data$annotated_results <- list(frares = fres_annotated, outres = ores_annotated)
 
           # Update processing state
           processing_state("done")

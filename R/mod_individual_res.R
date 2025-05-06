@@ -20,7 +20,7 @@ mod_individual_res_ui <- function(id) {
         fluidRow(
           style = "text-align:left;",
           tags$h1("Individual Results"),
-          selectInput(ns("select_sample"), "Choose Sample", choices = c("sample1", "sample2", "sample3")),
+          uiOutput(ns("select_sample")),
           textOutput(ns("genes_overlap"))
         ),
 
@@ -28,10 +28,12 @@ mod_individual_res_ui <- function(id) {
 
         fluidRow(
           column(6,
+                 style = 'overflow-x:auto;',
                  tags$h2("OUTRIDER Results"),
                  DTOutput(ns("outrider_res"))
           ),
           column(6,
+                 style = 'overflow-x:auto;',
                  tags$h2("FRASER Results"),
                  DTOutput(ns("fraser_res"))
           )
@@ -83,7 +85,7 @@ mod_individual_res_ui <- function(id) {
 #' @importFrom shiny observeEvent reactive req renderText renderPlot
 #' @importFrom DT renderDT
 #' @importFrom shinipsum random_DT random_ggplot
-mod_individual_res_server <- function(id, go_to_parameters, go_to_index, uploaded_data){
+mod_individual_res_server <- function(id, go_to_parameters, go_to_index, uploaded_data, processed_data){
   moduleServer(id, function(input, output, session){
     ns <- session$ns
 
@@ -97,17 +99,42 @@ mod_individual_res_server <- function(id, go_to_parameters, go_to_index, uploade
       sample(1:10, 1)
     })
 
+    output$select_sample <- renderUI({
+      req(uploaded_data$samplesheet)
+      selectInput(
+        ns("select_sample"),
+        "Choose Sample",
+        choices = uploaded_data$samplesheet$RNA_ID
+      )
+    })
+
     output$genes_overlap <- renderText({
       paste0("Genes aberrantly expressed and spliced: ", overlap())
     })
 
-    output$outrider_res <- renderDT(random_DT(nrow = 6, ncol = 9, type = "numchar"))
+    output$fraser_res <- renderDT({
+      req(processed_data$annotated_results)
+      req(is.list(processed_data$annotated_results))
+      req(input$select_sample)
+      filtered_data <- dplyr::filter(processed_data$annotated_results$frares, sampleID %in% input$select_sample)
+      util_nowrap_dt(filtered_data, nowrap_columns = c("GO_TERMS", "Phenotypes"))
+    })
 
-    output$fraser_res <- renderDT(random_DT(nrow = 6, ncol = 9, type = "numchar"))
+    output$outrider_res <- renderDT({
+      req(processed_data$annotated_results)
+      req(is.list(processed_data$annotated_results))
+      req(input$select_sample)
+      filtered_data <- dplyr::filter(processed_data$annotated_results$outres, sampleID %in% input$select_sample)
+      util_nowrap_dt(filtered_data, nowrap_columns = c("GO_TERMS", "Phenotypes"))
+    })
 
-    output$outrider_volcplot <- renderPlot(random_ggplot(type = "point"))
+    output$outrider_volcplot <- renderPlot(
+      OUTRIDER::plotVolcano(processed_data$outrider, sampleID = input$select_sample, xaxis = "zscore", label = aberrant, basePlot = TRUE)
+    )
 
-    output$fraser_volcplot <- renderPlot(random_ggplot(type = "point"))
+    output$fraser_volcplot <- renderPlot(
+      FRASER::plotVolcano(processed_data$fraser, sampleID = input$select_sample, type = "theta")
+    )
 
     output$rvc_table <- renderDT(random_DT(nrow = 6, ncol = 9, type = "numchar"))
 
