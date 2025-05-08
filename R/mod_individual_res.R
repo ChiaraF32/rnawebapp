@@ -129,7 +129,7 @@ mod_individual_res_server <- function(id, go_to_parameters, go_to_index, uploade
     })
 
     output$outrider_volcplot <- renderPlot(
-      OUTRIDER::plotVolcano(processed_data$outrider, sampleID = input$select_sample, xaxis = "zscore", label = aberrant, basePlot = TRUE)
+      OUTRIDER::plotVolcano(processed_data$outrider, sampleID = input$select_sample, xaxis = "zscore", label = "aberrant", basePlot = TRUE)
     )
 
     output$fraser_volcplot <- renderPlot(
