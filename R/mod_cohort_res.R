@@ -25,7 +25,7 @@ mod_cohort_res_ui <- function(id) {
         fluidRow(
           column(4,
                  tags$h2("Cohort Gene Expression"),
-                 selectInput(ns("select_phenotype"), "Choose Phenotype from PanelApp", choices = NULL, multiple = TRUE),
+                 selectizeInput(ns("select_phenotype"), "Choose Phenotype from PanelApp", choices = NULL, multiple = TRUE),
                  uiOutput(ns("select_gene")),
                  uiOutput(ns("select_sample"))),
           column(8, plotOutput(ns("gene_plot")))
@@ -67,23 +67,20 @@ mod_cohort_res_server <- function(id, go_to_parameters, go_to_index, uploaded_da
   moduleServer(id, function(input, output, session){
     ns <- session$ns
 
-    panels <- reactiveVal()
-
     observeEvent(input$return, {
       go_to_parameters()})
 
     mod_home_button_server("home_btn", go_to_index = go_to_index)
 
     observe({
+      # This will run once when the module initializes
       all_panels <- fetch_all_panels("uk")
-      panels(all_panels)
-
-      updateSelectInput(
-        session,
-        inputId = "select_phenotype",
-        choices = setNames(all_panels$id, all_panels$name)
-      )
+      # Use the correct ID - this was the key issue
+      updateSelectizeInput(session, "select_phenotype", choices = setNames(all_panels$id, all_panels$name))
     })
+
+    all_panels <- fetch_all_panels()
+    updateSelectInput(session, "panel_select", choices = setNames(all_panels$id, all_panels$name))
 
     phenotype_genes <- reactive({
       req(input$select_phenotype)

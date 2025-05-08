@@ -47,6 +47,8 @@ fetch_all_panels <- function(region = c("uk", "aus")) {
   return(all_panels)
 }
 
+fetch_all_panels("uk")
+
 #' Fetch gene symbols from a specific gene panel
 #'
 #' @param panel_id The panel ID (numeric or character) to retrieve genes from.

@@ -53,7 +53,7 @@ mod_index_ui <- function(id){
 #' @noRd
 #' @importFrom shiny renderPlot renderImage observeEvent showNotification plotOutput imageOutput
 #' @importFrom shinipsum random_DT random_ggplot random_image
-mod_index_server <- function(id, go_to_upload){
+mod_index_server <- function(id, go_to_upload, go_to_test){
   moduleServer(id, function(input, output, session){
 
     #Landing page plot placeholders

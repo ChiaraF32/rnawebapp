@@ -35,7 +35,8 @@ app_server <- function(input, output, session) {
 
   #Handle landing page events
   mod_index_server("index_1",
-                   go_to_upload = navigate_to(ROUTES$UPLOAD, page))
+                   go_to_upload = navigate_to(ROUTES$UPLOAD, page),
+                   go_to_test = navigate_to(ROUTES$TEST, page))
   mod_upload_server("upload_1",
                     go_to_processing = navigate_to(ROUTES$PROCESSING, page),
                     go_to_index = navigate_to(ROUTES$INDEX, page),
@@ -55,8 +56,12 @@ app_server <- function(input, output, session) {
                             go_to_parameters = navigate_to(ROUTES$PARAMETERS, page),
                             go_to_index = navigate_to(ROUTES$INDEX, page),
                             uploaded_data = uploaded_data, processed_data = processed_data)
-  mod_cohort_res_server("cohort_res_1",
-                        go_to_parameters = navigate_to(ROUTES$PARAMETERS, page),
-                        go_to_index = navigate_to(ROUTES$INDEX, page),
-                        uploaded_data = uploaded_data, processed_data = processed_data)
+  observeEvent(page(), {
+    if (page() == ROUTES$COHORT_RES) {
+      mod_cohort_res_server("cohort_res_1",
+                            go_to_parameters = navigate_to(ROUTES$PARAMETERS, page),
+                            go_to_index = navigate_to(ROUTES$INDEX, page),
+                          uploaded_data = uploaded_data, processed_data = processed_data)
+      }
+    })
 }
