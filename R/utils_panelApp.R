@@ -34,7 +34,8 @@ fetch_all_panels <- function(region = c("uk", "aus")) {
   repeat {
     response <- httr::GET(current_url)
     if (httr::status_code(response) == 200) {
-      content <- jsonlite::fromJSON(httr::content(response, "text"), flatten = TRUE)
+      content_text <- httr::content(response, "text", encoding = "UTF-8")
+      content <- jsonlite::fromJSON(content_text, flatten = TRUE)
       all_panels <- append(all_panels, list(content$results))
       if (is.null(content$`next`)) break
       current_url <- content$`next`
