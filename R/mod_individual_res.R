@@ -21,7 +21,8 @@ mod_individual_res_ui <- function(id) {
           style = "text-align:left;",
           tags$h1("Individual Results"),
           uiOutput(ns("select_sample")),
-          textOutput(ns("genes_overlap"))
+          tags$h2("Genes aberrantly expressed with ≥1 splice event"),
+          DTOutput(ns("genes_overlap"))
         ),
 
         tags$hr(),
@@ -94,11 +95,6 @@ mod_individual_res_server <- function(id, go_to_parameters, go_to_index, uploade
 
     mod_home_button_server("home_btn", go_to_index = go_to_index)
 
-    overlap <- reactive({
-      req(input$select_sample)
-      sample(1:10, 1)
-    })
-
     output$select_sample <- renderUI({
       req(uploaded_data$samplesheet)
       selectInput(
@@ -108,8 +104,10 @@ mod_individual_res_server <- function(id, go_to_parameters, go_to_index, uploade
       )
     })
 
-    output$genes_overlap <- renderText({
-      paste0("Genes aberrantly expressed and spliced: ", overlap())
+    output$genes_overlap <- renderDT({
+      req(processed_data$merged)
+      req(input$select_sample)
+      filt_merged <- dplyr::filter(processed_data$merged, sampleID %in% input$select_sample)
     })
 
     output$fraser_res <- renderDT({

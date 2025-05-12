@@ -291,3 +291,33 @@ plot_phenotype_distribution <- function(samplesheet) {
     )
 }
 
+#' Merge OUTRIDER and FRASER Results by Gene and Sample
+#'
+#' This function merges two data frames (`ores` and `frares`) containing OUTRIDER and FRASER results,
+#' respectively. It merges them on `geneID` and `sampleID`, identifies duplicates, and returns a
+#' collapsed data frame with a count of how many rows were merged per `(geneID, sampleID)` pair.
+#'
+#' @param ores A data frame of OUTRIDER results with `geneID` and `sampleID` columns.
+#' @param frares A data frame of FRASER results with `geneID` and `sampleID` columns.
+#'
+#' @return A data frame with columns: `geneID`, `sampleID`, and `n_merged` (number of merged entries).
+#'
+#' @examples
+#' merge_outrider_fraser(ores_df, frares_df)
+
+merge_outrider_fraser <- function(ores, frares) {
+  merged <- merge(
+    ores, frares,
+    by = c("geneID", "sampleID"),
+    suffixes = c(".out", ".fra")
+  )
+
+  collapsed <- merged %>%
+    dplyr::group_by(geneID, sampleID) %>%
+    dplyr::summarise(
+      splice_events = dplyr::n(),  # Count how many duplicates were merged
+      .groups = "drop"
+    )
+
+  return(collapsed)
+}

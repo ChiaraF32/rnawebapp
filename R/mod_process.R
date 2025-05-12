@@ -34,6 +34,8 @@ mod_process_ui <- function(id) {
             tags$br(),
             uiOutput(ns("annotate_results_ui")),
             tags$br(),
+            uiOutput(ns("merge_results")),
+            tags$br(),
             uiOutput(ns("complete_ui"))
           )
         ),
@@ -108,7 +110,7 @@ mod_process_server <- function(id, go_to_parameters, go_to_upload, go_to_index, 
     output$check_samples_ui <- renderUI({
       render_step_ui(
         step_name = "Checking sample identifiers",
-        completed_states = c("samples_checked", "genes_converted", "bams_corrected", "fraser_corrected", "results_calculated", "done"),
+        completed_states = c("samples_checked", "genes_converted", "bams_corrected", "fraser_corrected", "results_calculated", "results_annotated", "done"),
         current_state = processing_state()
         )
       })
@@ -116,7 +118,7 @@ mod_process_server <- function(id, go_to_parameters, go_to_upload, go_to_index, 
     output$convert_genes_ui <- renderUI({
       render_step_ui(
         step_name = "Converting gene names",
-        completed_states = c("genes_converted", "bams_corrected", "fraser_corrected", "results_calculated", "done"),
+        completed_states = c("genes_converted", "bams_corrected", "fraser_corrected", "results_calculated", "results_annotated", "done"),
         current_state = processing_state()
       )
     })
@@ -124,7 +126,7 @@ mod_process_server <- function(id, go_to_parameters, go_to_upload, go_to_index, 
     output$fix_bam_paths_ui <- renderUI({
       render_step_ui(
         step_name = "Correcting BAM paths",
-        completed_states = c("bams_corrected", "fraser_corrected", "results_calculated", "done"),
+        completed_states = c("bams_corrected", "fraser_corrected", "results_calculated", "results_annotated", "done"),
         current_state = processing_state()
       )
     })
@@ -132,7 +134,7 @@ mod_process_server <- function(id, go_to_parameters, go_to_upload, go_to_index, 
     output$fix_fraser_paths_ui <- renderUI({
       render_step_ui(
         step_name = "Correcting FRASER paths",
-        completed_states = c("fraser_corrected", "results_calculated", "done"),
+        completed_states = c("fraser_corrected", "results_calculated", "results_annotated", "done"),
         current_state = processing_state()
       )
     })
@@ -140,7 +142,7 @@ mod_process_server <- function(id, go_to_parameters, go_to_upload, go_to_index, 
     output$calculate_results_ui <- renderUI({
       render_step_ui(
         step_name = "OUTRIDER & FRASER Results Calculated",
-        completed_states = c("results_calculated", "done"),
+        completed_states = c("results_calculated", "results_annotated", "done"),
         current_state = processing_state()
       )
     })
@@ -148,6 +150,14 @@ mod_process_server <- function(id, go_to_parameters, go_to_upload, go_to_index, 
     output$annotate_results_ui <- renderUI({
       render_step_ui(
         step_name = "OUTRIDER & FRASER Results Annotated",
+        completed_states = c("results_annotated", "done"),
+        current_state = processing_state()
+      )
+    })
+
+    output$merge_results <- renderUI({
+      render_step_ui(
+        step_name = "Merging OUTRIDER and FRASER Results",
         completed_states = c("done"),
         current_state = processing_state()
       )
@@ -282,7 +292,21 @@ mod_process_server <- function(id, go_to_parameters, go_to_upload, go_to_index, 
           processed_data$annotated_results <- list(frares = fres_annotated, outres = ores_annotated)
 
           # Update processing state
+          processing_state("results_annotated")
+        }, delay = 0.1)
+      }
+    }, ignoreInit = TRUE)
+
+    observeEvent(processing_state(), {
+      if (processing_state() == "results_annotated") {
+
+        res <- processed_data$annotated_results
+
+        later::later(function() {
+          merged <- merge_outrider_fraser(res$outres, res$frares)
+          processed_data$merged <- merged
           processing_state("done")
+
         }, delay = 0.1)
       }
     }, ignoreInit = TRUE)
