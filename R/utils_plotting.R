@@ -28,63 +28,81 @@
 generate_sashimi_plot <- function(
     result_object,
     sample_index,
+    controls,
+    bam_dir,
     gtf_file = "./data/Homo_sapiens.GRCh38.113.gtf",
-    controls = c("IVCT-43Y-M", "IVCT-38-F"),
-    control_labels = c("Control", "Control"),
-    bam_dir = "/Volumes/PERKINS-LL-001/Sequencing/rnaseq/secondary/nfcore/2024-12-16_GenomicsWA_Realigned/star_salmon/",
+    control_labels = NULL,
     output_dir = ".",
     padding = 1000,
     ggsashimi_path = "./ggsashimi.py"
 ) {
-
   library(ggplot2)
   library(data.table)
   library(gridExtra)
   library(magick)
   library(pdftools)
 
-  sample <- as.character(result_object$frares$sampleID[sample_index])
-  region <- as.character(result_object$frares$coord[sample_index])
+  # Check sample/coord availability
+  if (nrow(result_object) == 0 || is.na(sample_index)) {
+    warning("⚠️ result_object is empty or sample_index is NA.")
+    return(NULL)
+  }
 
+  sample <- as.character(result_object$sampleID[sample_index])
+  region <- as.character(result_object$coord[sample_index])
+
+  if (is.na(sample) || is.na(region)) {
+    warning("⚠️ Sample or region is NA.")
+    return(NULL)
+  }
+
+  # Expand region
   region <- sub("^chr", "", region)
   region <- sub("^M", "MT", region)
-
   region_parts <- strsplit(region, "[:-]")[[1]]
+
+  if (length(region_parts) != 3) {
+    warning("❌ Region format not recognized: ", region)
+    return(NULL)
+  }
+
   chrom <- region_parts[1]
   start <- as.integer(region_parts[2])
   end   <- as.integer(region_parts[3])
-
   start <- max(1, start - padding)
   end   <- end + padding
   region_expanded <- paste0(chrom, ":", start, "-", end)
 
+  # Prepare file paths
   sample_bam <- file.path(bam_dir, paste0(sample, ".markdup.sorted.bam"))
   control_bams <- file.path(bam_dir, paste0(controls, ".markdup.sorted.bam"))
+
   bam_files <- c(sample_bam, control_bams)
-  groups <- c("Patient", control_labels)
   samples <- c(sample, controls)
 
-  sashimi_df <- data.frame(
-    samples = samples,
-    bam_files = bam_files,
-    groups = groups,
-    stringsAsFactors = FALSE
-  )
+  # Check for existing BAMs
+  bam_exists <- file.exists(bam_files)
+  if (!any(bam_exists)) {
+    warning("❌ No available BAM files found for: ", paste(bam_files, collapse = ", "))
+    return(NULL)
+  }
+
+  # Only include available BAMs
+  bam_files <- bam_files[bam_exists]
+  samples <- samples[bam_exists]
+  groups <- c("Patient", rep("Control", length(controls)))[bam_exists]
+
+  # Assemble table
+  sashimi_df <- data.frame(samples = samples, bam_files = bam_files, groups = groups, stringsAsFactors = FALSE)
 
   sashimi_input <- tempfile(fileext = ".tsv")
   on.exit(unlink(sashimi_input), add = TRUE)
-  write.table(
-    sashimi_df,
-    file = sashimi_input,
-    sep = "\t",
-    quote = FALSE,
-    row.names = FALSE,
-    col.names = FALSE
-  )
+  write.table(sashimi_df, file = sashimi_input, sep = "\t", quote = FALSE, row.names = FALSE, col.names = FALSE)
 
   output_pdf <- file.path(output_dir, paste0(sample, "_", region, "_sashimi_plot.pdf"))
   output_png <- sub("\\.pdf$", ".png", output_pdf)
 
+  # Build sashimi command
   cmd <- paste(
     ggsashimi_path,
     "-b", sashimi_input,
@@ -95,9 +113,15 @@ generate_sashimi_plot <- function(
     "--base-size=20 --ann-height=3 --height=5 --width=18 --shrink --fix-y-scale"
   )
 
+  # Run sashimi
   system(cmd)
 
-  # Convert to PNG
+  # Check output existence
+  if (!file.exists(output_pdf)) {
+    warning("❌ Sashimi plot PDF not generated: ", output_pdf)
+    return(NULL)
+  }
+
   img <- image_read_pdf(output_pdf, density = 150)
   image_write(img, output_png, format = "png")
 

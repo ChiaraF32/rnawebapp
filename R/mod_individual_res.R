@@ -22,7 +22,7 @@ mod_individual_res_ui <- function(id) {
           tags$h1("Individual Results"),
           uiOutput(ns("select_sample")),
           tags$h2("Genes aberrantly expressed with ≥1 splice event"),
-          DTOutput(ns("genes_overlap"))
+          column(6, DTOutput(ns("genes_overlap")))
         ),
 
         tags$hr(),
@@ -47,11 +47,21 @@ mod_individual_res_ui <- function(id) {
           ),
           column(6,
                  tags$h2("FRASER Volcano Plot"),
+                 selectInput(ns("fraser_metric"), "Choose Metric", choices = c("theta", "psi5", "psi3")),
                  plotOutput(ns("fraser_volcplot"))
           )
         ),
 
         tags$hr(),
+
+        fluidRow(
+          column(12,
+            tags$h2("ggshashimi Plot of Aberrant Splice Junction"),
+            uiOutput(ns("select_event_ui")),
+            uiOutput(ns("controls")),
+            imageOutput(ns("sashimi"), height = "auto")
+          )
+        ),
 
         fluidRow(
           column(6,
@@ -130,9 +140,72 @@ mod_individual_res_server <- function(id, go_to_parameters, go_to_index, uploade
       OUTRIDER::plotVolcano(processed_data$outrider, sampleID = input$select_sample, xaxis = "zscore", label = "aberrant", basePlot = TRUE)
     )
 
-    output$fraser_volcplot <- renderPlot(
-      FRASER::plotVolcano(processed_data$fraser, sampleID = input$select_sample, type = "theta")
-    )
+    output$fraser_volcplot <- renderPlot({
+      req(processed_data$fraser)
+      req(input$select_sample)
+      req(input$fraser_metric)
+      FRASER::plotVolcano(processed_data$fraser, sampleID = input$select_sample, label = "aberrant", type = input$fraser_metric)
+    })
+
+    output$select_event_ui <- renderUI({
+      req(processed_data$annotated_results)
+      filtered_data <- dplyr::filter(processed_data$annotated_results$frares, sampleID %in% input$select_sample)
+      # Generate row-based labels
+      choices <- setNames(
+        seq_len(nrow(filtered_data)),  # the value returned by selectInput
+        paste0(
+          "gene: ", filtered_data$geneID,
+          " | coord: ", filtered_data$coord,
+          " | ", filtered_data$type
+        )
+      )
+      selectInput(
+        ns("select_event"),
+        "Select Aberrant Splice Event",
+        choices = choices
+      )
+    })
+
+    output$controls <- renderUI({
+      req(uploaded_data$samplesheet)
+      selectInput(
+        ns("controls"),
+        "Choose Control Samples (At Least 2)",
+        choices = uploaded_data$samplesheet$RNA_ID,
+        multiple = TRUE
+      )
+    })
+
+    output$sashimi <- renderImage({
+      req(uploaded_data$bam_dir, input$select_event)
+
+      filtered_data <- dplyr::filter(
+        processed_data$annotated_results$frares,
+        sampleID == input$select_sample
+      )
+
+      result_paths <- generate_sashimi_plot(
+        result_object = filtered_data,
+        sample_index = as.integer(input$select_event),
+        bam_dir = uploaded_data$bam_dir,
+        controls = input$controls
+      )
+
+      if (is.null(result_paths) || !file.exists(result_paths$png)) {
+        return(list(
+          src = "www/placeholder.png",  # optional fallback
+          contentType = "image/png",
+          alt = "Sashimi plot not available"
+        ))
+      }
+
+      list(
+        src = normalizePath(result_paths$png),
+        contentType = "image/png",
+        width = "100%",
+        alt = "Sashimi plot"
+      )
+    }, deleteFile = FALSE)
 
     output$rvc_table <- renderDT(random_DT(nrow = 6, ncol = 9, type = "numchar"))
 

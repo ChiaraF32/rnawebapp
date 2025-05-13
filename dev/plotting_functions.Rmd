@@ -122,34 +122,34 @@ write.table(
 #' @import magick
 #' @export
 generate_sashimi_plot <- function(
-  result_object,
-  sample_index,
-  gtf_file = "./data/Homo_sapiens.GRCh38.113.gtf",
-  controls = c("IVCT-43Y-M", "IVCT-38-F"),
-  control_labels = c("Control", "Control"),
-  bam_dir = "/Volumes/PERKINS-LL-001/Sequencing/rnaseq/secondary/nfcore/2024-12-16_GenomicsWA_Realigned/star_salmon/",
-  output_dir = ".",
-  padding = 1000,
-  ggsashimi_path = "./ggsashimi.py"
+    result_object,
+    sample_index,
+    controls,
+    bam_dir,
+    gtf_file = "./data/Homo_sapiens.GRCh38.113.gtf",
+    control_labels = c("Control", "Control"),
+    output_dir = ".",
+    padding = 1000,
+    ggsashimi_path = "./ggsashimi.py"
 ) {
-  
+
   library(ggplot2)
   library(data.table)
   library(gridExtra)
   library(magick)
   library(pdftools)
-  
-  sample <- as.character(result_object$frares$sampleID[sample_index])
-  region <- as.character(result_object$frares$coord[sample_index])
-  
+
+  sample <- as.character(result_object$sampleID[sample_index])
+  region <- as.character(result_object$coord[sample_index])
+
   region <- sub("^chr", "", region)
   region <- sub("^M", "MT", region)
-  
+
   region_parts <- strsplit(region, "[:-]")[[1]]
   chrom <- region_parts[1]
   start <- as.integer(region_parts[2])
   end   <- as.integer(region_parts[3])
-  
+
   start <- max(1, start - padding)
   end   <- end + padding
   region_expanded <- paste0(chrom, ":", start, "-", end)
@@ -201,7 +201,9 @@ generate_sashimi_plot <- function(
 }
 
 plot_path <- generate_sashimi_plot(
-  result_object = results,
+  result_object = fres_annotated,
+  bam_dir = "/Volumes/PERKINS-LL-001/Sequencing/rnaseq/secondary/nfcore/2024-12-16_GenomicsWA_Realigned/star_salmon/",
+  controls = c("IVCT-43Y-M", "IVCT-38-F"),
   sample_index = 25
 )
 

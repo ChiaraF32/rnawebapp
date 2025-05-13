@@ -7,11 +7,10 @@
 generate_sashimi_plot(
   result_object,
   sample_index,
+  controls,
+  bam_dir,
   gtf_file = "./data/Homo_sapiens.GRCh38.113.gtf",
-  controls = c("IVCT-43Y-M", "IVCT-38-F"),
-  control_labels = c("Control", "Control"),
-  bam_dir =
-    "/Volumes/PERKINS-LL-001/Sequencing/rnaseq/secondary/nfcore/2024-12-16_GenomicsWA_Realigned/star_salmon/",
+  control_labels = NULL,
   output_dir = ".",
   padding = 1000,
   ggsashimi_path = "./ggsashimi.py"
@@ -23,13 +22,13 @@ with fields `sampleID` and `coord`, where `coord` is in the format `"chr:start-e
 
 \item{sample_index}{Integer index indicating which sample (row of `result_object$frares`) to plot.}
 
-\item{gtf_file}{Path to the GTF file used for annotation (e.g., `"./data/Homo_sapiens.GRCh38.113.gtf"`).}
-
 \item{controls}{Character vector of sample IDs to use as controls (must match BAM filenames).}
 
-\item{control_labels}{Character vector of labels corresponding to each control (same length as `controls`).}
-
 \item{bam_dir}{Directory containing all BAM files, named as `<sampleID>.markdup.sorted.bam`.}
+
+\item{gtf_file}{Path to the GTF file used for annotation (e.g., `"./data/Homo_sapiens.GRCh38.113.gtf"`).}
+
+\item{control_labels}{Character vector of labels corresponding to each control (same length as `controls`).}
 
 \item{output_dir}{Directory where the output PDF and PNG files should be saved. Default is current directory.}
 
