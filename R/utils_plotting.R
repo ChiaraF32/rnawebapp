@@ -69,6 +69,16 @@ generate_sashimi_plot <- function(
   chrom <- region_parts[1]
   start <- as.integer(region_parts[2])
   end   <- as.integer(region_parts[3])
+
+  # Expand very small regions to minimum span
+  min_span <- 100
+  if (abs(end - start) < min_span) {
+    midpoint <- floor((start + end) / 2)
+    start <- max(1, midpoint - min_span)
+    end <- midpoint + min_span
+    message(glue::glue("🛠️ Region too small, expanded to: {chrom}:{start}-{end}"))
+  }
+
   start <- max(1, start - padding)
   end   <- end + padding
   region_expanded <- paste0(chrom, ":", start, "-", end)

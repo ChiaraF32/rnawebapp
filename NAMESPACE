@@ -2,11 +2,13 @@
 
 export(annotate_ensembl_ids)
 export(annotate_results_with_omim_go)
+export(filtered_annotated_table)
 export(fixFdsH5Paths)
 export(generate_results)
 export(generate_sashimi_plot)
 export(plot_gene_expression_multi)
 export(plot_phenotype_distribution)
+export(render_gene_table)
 export(run_app)
 export(summarise_data)
 export(update_bam_paths)

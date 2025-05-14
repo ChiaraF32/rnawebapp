@@ -279,14 +279,14 @@ mod_process_server <- function(id, go_to_parameters, go_to_upload, go_to_index, 
           fres_annotated <- annotate_results_with_omim_go(
             results = res$frares,
             add_omim = TRUE,
-            add_go = TRUE
+            add_go = FALSE
           )
 
           # OUTRIDER example (with same gene list)
           ores_annotated <- annotate_results_with_omim_go(
             results = res$outres,
             add_omim = TRUE,
-            add_go = TRUE
+            add_go = FALSE
           )
 
           processed_data$annotated_results <- list(frares = fres_annotated, outres = ores_annotated)

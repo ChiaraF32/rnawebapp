@@ -202,9 +202,9 @@ generate_sashimi_plot <- function(
 
 plot_path <- generate_sashimi_plot(
   result_object = fres_annotated,
-  bam_dir = "/Volumes/PERKINS-LL-001/Sequencing/rnaseq/secondary/nfcore/2024-12-16_GenomicsWA_Realigned/star_salmon/",
+  bam_dir = "/Volumes/PERKINS-LL-001/Sequencing/rnaseq/secondary/nfcore/MUSCLE_nfcore_hg38_BAM",
   controls = c("IVCT-43Y-M", "IVCT-38-F"),
-  sample_index = 25
+  sample_index = 1
 )
 
 ```

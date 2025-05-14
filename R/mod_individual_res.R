@@ -105,6 +105,10 @@ mod_individual_res_server <- function(id, go_to_parameters, go_to_index, uploade
 
     mod_home_button_server("home_btn", go_to_index = go_to_index)
 
+    selected_sample <- reactive({
+      req(input$select_sample)
+    })
+
     output$select_sample <- renderUI({
       req(uploaded_data$samplesheet)
       selectInput(
@@ -116,48 +120,41 @@ mod_individual_res_server <- function(id, go_to_parameters, go_to_index, uploade
 
     output$genes_overlap <- renderDT({
       req(processed_data$merged)
-      req(input$select_sample)
-      filt_merged <- dplyr::filter(processed_data$merged, sampleID %in% input$select_sample)
+      selected_sample()
+      filt_merged <- filtered_annotated_table(processed_data$merged, samples = selected_sample())
+      filt_merged
     })
 
-    output$fraser_res <- renderDT({
-      req(processed_data$annotated_results)
-      req(is.list(processed_data$annotated_results))
-      req(input$select_sample)
-      filtered_data <- dplyr::filter(processed_data$annotated_results$frares, sampleID %in% input$select_sample)
-      util_nowrap_dt(filtered_data, nowrap_columns = c("GO_TERMS", "Phenotypes"))
-    })
+    output$fraser_res <- render_gene_table(processed_data$annotated_results$frares, sample_id = selected_sample)
 
-    output$outrider_res <- renderDT({
-      req(processed_data$annotated_results)
-      req(is.list(processed_data$annotated_results))
-      req(input$select_sample)
-      filtered_data <- dplyr::filter(processed_data$annotated_results$outres, sampleID %in% input$select_sample)
-      util_nowrap_dt(filtered_data, nowrap_columns = c("GO_TERMS", "Phenotypes"))
-    })
+    output$outrider_res <- render_gene_table(processed_data$annotated_results$outres, sample_id = selected_sample)
 
     output$outrider_volcplot <- renderPlot(
-      OUTRIDER::plotVolcano(processed_data$outrider, sampleID = input$select_sample, xaxis = "zscore", label = "aberrant", basePlot = TRUE)
+      OUTRIDER::plotVolcano(processed_data$outrider, sampleID = selected_sample(), xaxis = "zscore", label = "aberrant", basePlot = TRUE)
     )
 
     output$fraser_volcplot <- renderPlot({
       req(processed_data$fraser)
-      req(input$select_sample)
+      selected_sample()
       req(input$fraser_metric)
-      FRASER::plotVolcano(processed_data$fraser, sampleID = input$select_sample, label = "aberrant", type = input$fraser_metric)
+      FRASER::plotVolcano(processed_data$fraser, sampleID = selected_sample(), label = "aberrant", type = input$fraser_metric)
     })
 
     output$select_event_ui <- renderUI({
       req(processed_data$annotated_results)
-      filtered_data <- dplyr::filter(processed_data$annotated_results$frares, sampleID %in% input$select_sample)
-      # Generate row-based labels
+      filtered_data <- filtered_annotated_table(processed_data$annotated_results$frares, samples = selected_sample())
+      if (nrow(filtered_data) == 0) {
+        return(tags$div(
+          class = "alert alert-info",
+          "ℹ️ No aberrant splicing events available for this sample."
+        ))
+      }
       choices <- setNames(
         seq_len(nrow(filtered_data)),  # the value returned by selectInput
         paste0(
           "gene: ", filtered_data$geneID,
           " | coord: ", filtered_data$coord,
-          " | ", filtered_data$type
-        )
+          " | ", filtered_data$type)
       )
       selectInput(
         ns("select_event"),
@@ -179,10 +176,7 @@ mod_individual_res_server <- function(id, go_to_parameters, go_to_index, uploade
     output$sashimi <- renderImage({
       req(uploaded_data$bam_dir, input$select_event)
 
-      filtered_data <- dplyr::filter(
-        processed_data$annotated_results$frares,
-        sampleID == input$select_sample
-      )
+      filtered_data <- filtered_annotated_table(processed_data$annotated_results$frares, samples = selected_sample())
 
       result_paths <- generate_sashimi_plot(
         result_object = filtered_data,

@@ -95,6 +95,8 @@ def define_options():
                 help="Output file resolution in PPI (pixels per inch). Applies only to raster output formats [default=%(default)s]")
         parser.add_argument("--debug-info", action=DebugInfoAction,
                 help="Show several system information useful for debugging purposes [default=%(default)s]")
+        parser.add_argument("--scale-ann-height", action="store_true",
+                help="Automatically scale annotation height based on number of transcripts")
         parser.add_argument('--version', action='version', version=get_version())
 #       parser.add_argument("-s", "--smooth", action="store_true", default=False, help="Smooth the signal histogram")
         return parser
@@ -712,6 +714,12 @@ if __name__ == "__main__":
 
         if args.gtf:
                 transcripts, exons = read_gtf(args.gtf, args.coordinates)
+                if args.scale_ann_height:
+                        n_tx = len(transcripts)
+                        if n_tx > 0:
+                                args.ann_height = min(0.3 * n_tx, 5.0)
+                        else:
+                                args.ann_height = 1.0
 
         if args.out_format not in ('pdf', 'png', 'svg', 'tiff', 'jpeg'):
                 print("ERROR: Provided output format '%s' is not available. Please select among 'pdf', 'png', 'svg', 'tiff' or 'jpeg'" % args.out_format)
