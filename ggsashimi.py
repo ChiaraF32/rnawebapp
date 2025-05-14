@@ -717,7 +717,7 @@ if __name__ == "__main__":
                 if args.scale_ann_height:
                         n_tx = len(transcripts)
                         if n_tx > 0:
-                                args.ann_height = min(0.3 * n_tx, 5.0)
+                                args.ann_height = min(0.7 * n_tx, 6.0)
                         else:
                                 args.ann_height = 1.0
 

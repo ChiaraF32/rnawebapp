@@ -120,7 +120,7 @@ generate_sashimi_plot <- function(
     "-g", gtf_file,
     "-o", output_pdf,
     "-M 10 -C 3 -O 3 --alpha 0.25 -A median_j",
-    "--base-size=20 --ann-height=3 --height=5 --width=18 --shrink --fix-y-scale"
+    "--base-size=20 --scale-ann-height --height=5 --width=18 --shrink --fix-y-scale"
   )
 
   # Run sashimi
