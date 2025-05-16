@@ -4,12 +4,7 @@
 \alias{fixFdsH5Paths}
 \title{Fix the FRASER results directory}
 \usage{
-fixFdsH5Paths(
-  fds,
-  base_path = "./data/savedObjects/MUSCLE--v38/",
-  working_dir = "./data/",
-  verbose = FALSE
-)
+fixFdsH5Paths(fds, base_path, working_dir = "./data/old", verbose = FALSE)
 }
 \arguments{
 \item{fds}{A FRASER dataset}

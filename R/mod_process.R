@@ -236,11 +236,12 @@ mod_process_server <- function(id, go_to_parameters, go_to_upload, go_to_index, 
       if (processing_state() == "bams_corrected") {
 
         fraser <- processed_data$fraser
+        fraser_dir <- uploaded_data$fraser_dir
 
         later::later(function() {
 
           # Fix paths to fraser objects
-          fds_fixed <- fixFdsH5Paths(fraser)
+          fds_fixed <- fixFdsH5Paths(fraser, base_path = fraser_dir)
 
           # Save back to uploaded data
           processed_data$fraser <- fds_fixed

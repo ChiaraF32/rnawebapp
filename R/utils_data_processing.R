@@ -53,8 +53,8 @@ annotate_ensembl_ids <- function(se, annotation = annotables::grch38) {
 #' @export
 #'
 fixFdsH5Paths <- function(fds,
-                          base_path = "./data/savedObjects/MUSCLE--v38/",
-                          working_dir = "./data/",
+                          base_path,
+                          working_dir = "./data/old",
                           verbose = FALSE) {
   fds@workingDir <- working_dir
 
