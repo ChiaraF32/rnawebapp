@@ -21,21 +21,26 @@ mod_process_ui <- function(id) {
           width = 4,
           tags$div(
             style = "text-align:left; padding: 30px;",
-            tags$h1("Select P-adj Cut-off"),
+            tags$h2("Select P-adj Cut-off"),
             numericInput(ns("padj_out"), "OUTRIDER p-adjust threshold", value = 0.05, min = 0, max = 1, step = 0.005),
             numericInput(ns("padj_fra"), "FRASER p-adjust threshold", value = 0.05, min = 0, max = 1, step = 0.005),
             checkboxInput(ns("all_res"), "Calculate All Results", value = FALSE),
-            actionButton(ns("process_data"), "Process Data")
+            "Note: selecting All results may add >2 minutes to processing time depending on the size of the dataset",
+            tags$br(),
+            tags$br(),
+            actionButton(ns("process_data"), "Process Data", class = "btn btn-success")
           )
         )
       ),
+
+      tags$hr(),
 
       fluidRow(
         column(
           width = 4,
           tags$div(
             style = "text-align:left; padding: 30px;",
-            tags$h1("Data Processing Progress"),
+            tags$h2("Data Processing Progress"),
             uiOutput(ns("check_samples_ui")),
             tags$br(),
             uiOutput(ns("convert_genes_ui")),
@@ -57,7 +62,7 @@ mod_process_ui <- function(id) {
           width = 4,
           tags$div(
             style = "padding: 30px",
-            tags$h1("Data Summary"),
+            tags$h2("Data Summary"),
             DTOutput(ns("data_summary"))
           )
         ),
@@ -65,7 +70,7 @@ mod_process_ui <- function(id) {
           width = 4,
           tags$div(
             style = "padding: 30px",
-            tags$h1("Phenotype"),
+            tags$h2("Phenotype"),
             plotOutput(ns("phenotype_plot"))
           )
         )
@@ -273,11 +278,12 @@ mod_process_server <- function(id, go_to_parameters, go_to_upload, go_to_index, 
         fraser <- processed_data$fraser
         padj_out <- input$padj_out
         padj_fra <- input$padj_fra
+        all <- input$all_res
 
         later::later(function() {
 
           # Calculate fraser and outrider results
-          results(generate_results(outrider, fraser, padj_out, padj_fra))
+          results(generate_results(outrider, fraser, padj_out, padj_fra, merged = TRUE, all = all))
           processing_state("results_calculated")
         }, delay = 0.1)
       }

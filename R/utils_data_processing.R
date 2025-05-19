@@ -77,38 +77,78 @@ fixFdsH5Paths <- function(fds,
 
 #' Generate OUTRIDER and FRASER results with optional padjust filtering
 #'
-#' @param fds A FRASER dataset
-#' @param ods An OUTRIDER dataset
-#' @param padj_threshold Optional adjusted p-value threshold for filtering (default = 0.05)
-#' @param merged select to return a dataframe containing the samples and genes in both FRASER and OUTRIDER
+#' @param ods An OUTRIDER dataset (ODS)
+#' @param fds A FRASER dataset (FDS)
+#' @param padj_out Adjusted p-value threshold for OUTRIDER results (default = 0.05)
+#' @param padj_fra Adjusted p-value threshold for FRASER results (default = 0.05)
+#' @param merged Logical; whether to return a merged data.frame containing overlapping samples and genes (default = TRUE)
+#' @param all Logical; whether to also return unfiltered result tables from OUTRIDER and FRASER (default = FALSE)
 #'
-#' @return list containing OUTRIDER and FRASER result tables
+#' @return A list containing filtered `outres` and `frares`, and optionally `merged`, `outres_all`, `frares_all`
 #' @export
 #'
 #' @importFrom dplyr select rename transmute filter
 #' @importFrom data.table as.data.table
 #' @importFrom OUTRIDER results
 #' @importFrom FRASER results
-generate_results <- function(ods, fds, padj_out, padj_fra, merged = TRUE) {
+generate_results <- function(ods, fds, padj_out = 0.05, padj_fra = 0.05, merged = TRUE, all = FALSE) {
+
+  # Get filtered results
   outres <- as.data.frame(OUTRIDER::results(ods, padjCutoff = padj_out))
   frares <- as.data.table(FRASER::results(fds, padjCutoff = padj_fra))
 
+  # Clean up and standardize FRASER results
   frares <- frares %>%
     dplyr::rename(geneID = hgncSymbol) %>%
     transmute(
       sampleID, geneID,
       coord = paste0(seqnames, ":", start, "-", end),
-      type, strand, padjust, psiValue, deltaPsi, counts, totalCounts, meanCounts, meanTotalCounts, annotatedJunction
+      type, strand, padjust, psiValue, deltaPsi,
+      counts, totalCounts, meanCounts, meanTotalCounts, annotatedJunction
     )
 
+  # Rearrange OUTRIDER results to put padjust early
   outres <- outres %>%
     dplyr::select(sampleID, geneID, padjust, everything())
 
-  merged <- merge(frares, outres, by.x = c("geneID", "sampleID"), by.y = c("geneID", "sampleID"), suffixes = c(".fra", ".out")) %>%
-    dplyr::select(geneID:sampleID) %>%
-    unique()
+  # Optional merged results
+  merged_df <- NULL
+  if (merged) {
+    merged_df <- merge(
+      frares, outres,
+      by = c("sampleID", "geneID"),
+      suffixes = c(".fra", ".out")
+    ) %>%
+      dplyr::select(geneID, sampleID) %>%
+      unique()
+  }
 
-  return(list(outres = outres, frares = frares, merged = merged))
+  # Optional full results (unfiltered)
+  outres_all <- NULL
+  frares_all <- NULL
+  if (all) {
+    outres_all <- as.data.frame(OUTRIDER::results(ods, all = TRUE))
+    outres_all <- outres_all %>%
+      dplyr::select(sampleID, geneID, padjust, everything())
+    frares_all <- as.data.table(FRASER::results(fds, all = TRUE))
+    frares_all <- frares_all %>%
+      dplyr::rename(geneID = hgncSymbol) %>%
+      transmute(
+        sampleID, geneID,
+        coord = paste0(seqnames, ":", start, "-", end),
+        type, strand, padjust, psiValue, deltaPsi,
+        counts, totalCounts, meanCounts, meanTotalCounts, annotatedJunction
+      )
+  }
+
+  # Return result list
+  return(list(
+    outres = outres,
+    frares = frares,
+    merged = merged_df,
+    outres_all = outres_all,
+    frares_all = frares_all
+  ))
 }
 
 

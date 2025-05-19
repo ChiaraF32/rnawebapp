@@ -1,0 +1,49 @@
+---
+title: "Individual Sample Reports"
+output: pdf_document
+params:
+    sample_id: NA
+    phenotype: NA
+    frares: NULL
+    outres: NULL
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(dplyr)
+library(ggplot2)
+library(OUTRIDER)
+library(FRASER)
+```
+
+```{r outres-table}
+params$outres %>% 
+  filter(sampleID == params$sample_id) %>%
+  head(10)
+```
+
+```{r frares-table}
+params$frares %>% 
+  filter(sampleID == params$sample_id) %>%
+  head(10)
+```
+
+```{r OUTRIDER-volcplot, fig.height=4, fig.width=6}
+OUTRIDER::plotVolcano(
+  params$outres,
+  sampleID = params$sample_id,
+  xaxis = "zscore",
+  label = "aberrant",
+  basePlot = TRUE
+)
+```
+
+```{r frares-volcano, fig.height=4, fig.width=6}
+FRASER::plotVolcano(
+  params$frares,
+  sampleID = params$sample_id,
+  type = "jaccard",
+  label = "aberrant"
+)
+```
+

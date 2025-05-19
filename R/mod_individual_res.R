@@ -20,9 +20,15 @@ mod_individual_res_ui <- function(id) {
         fluidRow(
           style = "text-align:left;",
           tags$h1("Individual Results"),
-          uiOutput(ns("select_sample")),
-          tags$h2("Genes aberrantly expressed with ≥1 splice event"),
-          column(6, DTOutput(ns("genes_overlap")))
+          column(6,
+                 uiOutput(ns("select_sample")),
+                 textOutput(ns("phenotype")),
+                 tags$br(),
+                 actionButton(ns("display_results"), label = "Display Results", class = "btn btn-success")),
+          column(6,
+          tags$h2("Overlapping FRASER & OUTRIDER Results"),
+          "Genes aberrantly expressed with ≥1 splice event",
+          DTOutput(ns("genes_overlap")))
         ),
 
         tags$hr(),
@@ -59,6 +65,7 @@ mod_individual_res_ui <- function(id) {
             tags$h2("ggshashimi Plot of Aberrant Splice Junction"),
             uiOutput(ns("select_event_ui")),
             uiOutput(ns("controls")),
+            actionButton(ns("plot_sashimi"), "Generate Sashimi Plot", class = "btn btn-primary"),
             imageOutput(ns("sashimi"), height = "auto")
           )
         ),
@@ -82,7 +89,7 @@ mod_individual_res_ui <- function(id) {
           column(6,
                  style = "text-align:left; padding: 20px;",
                  tags$br(),
-                 actionButton(ns("download"), "Download Report", class = "btn btn-success"))
+                 downloadButton(ns("download"), "Download Report", class = "btn btn-success"))
         )
       )
     )
@@ -100,6 +107,17 @@ mod_individual_res_server <- function(id, go_to_parameters, go_to_index, uploade
   moduleServer(id, function(input, output, session){
     ns <- session$ns
 
+    results_ready <- reactiveVal(FALSE)
+
+    observeEvent(input$display_results, {
+      req(selected_sample())
+      results_ready(TRUE)
+    })
+
+    observeEvent(input$select_sample, {
+      results_ready(FALSE)
+    })
+
     observeEvent(input$return, {
       go_to_parameters()})
 
@@ -107,6 +125,7 @@ mod_individual_res_server <- function(id, go_to_parameters, go_to_index, uploade
 
     selected_sample <- reactive({
       req(input$select_sample)
+      input$select_sample
     })
 
     output$select_sample <- renderUI({
@@ -114,34 +133,58 @@ mod_individual_res_server <- function(id, go_to_parameters, go_to_index, uploade
       selectInput(
         ns("select_sample"),
         "Choose Sample",
-        choices = uploaded_data$samplesheet$RNA_ID
+        choices = uploaded_data$samplesheet$RNA_ID,
+        selected = NULL
       )
     })
 
+
+    output$phenotype <- renderText({
+      req(uploaded_data$samplesheet, selected_sample())
+      sample_row <- uploaded_data$samplesheet[uploaded_data$samplesheet$RNA_ID == selected_sample(), ]
+      paste0("Phenotype: ", sample_row$PHENOTYPE)
+    })
+
     output$genes_overlap <- renderDT({
-      req(processed_data$merged)
+      req(results_ready(), processed_data$merged)
       selected_sample()
       filt_merged <- filtered_annotated_table(processed_data$merged, samples = selected_sample())
       filt_merged
     })
 
-    output$fraser_res <- render_gene_table(processed_data$annotated_results$frares, sample_id = selected_sample)
+    output$fraser_res <- render_gene_table(processed_data$annotated_results$frares, sample_id = reactive({
+      req(results_ready())
+      selected_sample()
+    }))
 
-    output$outrider_res <- render_gene_table(processed_data$annotated_results$outres, sample_id = selected_sample)
+    output$outrider_res <- render_gene_table(processed_data$annotated_results$outres, sample_id = reactive({
+      req(results_ready())
+      selected_sample()
+    }))
 
-    output$outrider_volcplot <- renderPlot(
-      OUTRIDER::plotVolcano(processed_data$outrider, sampleID = selected_sample(), xaxis = "zscore", label = "aberrant", basePlot = TRUE)
-    )
+    output$outrider_volcplot <- renderPlot({
+      req(results_ready(), processed_data$outrider, selected_sample())
+      OUTRIDER::plotVolcano(
+        processed_data$outrider,
+        sampleID = selected_sample(),
+        xaxis = "zscore",
+        label = "aberrant",
+        basePlot = TRUE
+      )
+    })
 
     output$fraser_volcplot <- renderPlot({
-      req(processed_data$fraser)
-      selected_sample()
-      req(input$fraser_metric)
-      FRASER::plotVolcano(processed_data$fraser, sampleID = selected_sample(), label = "aberrant", type = input$fraser_metric)
+      req(results_ready(), processed_data$fraser, selected_sample(), input$fraser_metric)
+      FRASER::plotVolcano(
+        processed_data$fraser,
+        sampleID = selected_sample(),
+        label = "aberrant",
+        type = input$fraser_metric
+      )
     })
 
     output$select_event_ui <- renderUI({
-      req(processed_data$annotated_results)
+      req(results_ready(), processed_data$annotated_results)
       filtered_data <- filtered_annotated_table(processed_data$annotated_results$frares, samples = selected_sample())
       if (nrow(filtered_data) == 0) {
         return(tags$div(
@@ -173,8 +216,11 @@ mod_individual_res_server <- function(id, go_to_parameters, go_to_index, uploade
       )
     })
 
-    output$sashimi <- renderImage({
-      req(uploaded_data$bam_dir, input$select_event)
+
+    sashimi_path <- reactiveVal(NULL)
+
+    observeEvent(input$plot_sashimi, {
+      req(uploaded_data$bam_dir, input$select_event, input$controls, length(input$controls) >= 2)
 
       filtered_data <- filtered_annotated_table(processed_data$annotated_results$frares, samples = selected_sample())
 
@@ -185,18 +231,19 @@ mod_individual_res_server <- function(id, go_to_parameters, go_to_index, uploade
         controls = input$controls
       )
 
-      if (is.null(result_paths) || !file.exists(result_paths$png)) {
-        return(list(
-          src = "www/placeholder.png",  # optional fallback
-          contentType = "image/png",
-          alt = "Sashimi plot not available"
-        ))
+      if (!is.null(result_paths) && file.exists(result_paths$png)) {
+        sashimi_path(result_paths$png)
+      } else {
+        sashimi_path("www/placeholder.png")
       }
+    })
 
+    output$sashimi <- renderImage({
+      req(sashimi_path())
       list(
-        src = normalizePath(result_paths$png),
+        src = normalizePath(sashimi_path()),
         contentType = "image/png",
-        width = "100%",
+        width = "75%",
         alt = "Sashimi plot"
       )
     }, deleteFile = FALSE)
@@ -205,6 +252,39 @@ mod_individual_res_server <- function(id, go_to_parameters, go_to_index, uploade
 
     output$fusionsv_table <- renderDT(random_DT(nrow = 6, ncol = 9, type = "numchar"))
 
+    output$download <- downloadHandler(
+      filename = function() {
+        paste0("Sample_Report_", selected_sample(), ".pdf")
+      },
+      content = function(file) {
+        req(results_ready(), selected_sample())
+
+        # Extract phenotype
+        sample_row <- uploaded_data$samplesheet[uploaded_data$samplesheet$RNA_ID == selected_sample(), ]
+        phenotype <- sample_row$PHENOTYPE
+
+        # Extract results
+        outres <- processed_data$annotated_results$outres
+        frares <- processed_data$annotated_results$frares
+
+        # Copy Rmd template to temp directory
+        tempReport <- file.path(tempdir(), "report_template.Rmd")
+        file.copy("inst/reports/report_template.Rmd", tempReport, overwrite = TRUE)
+
+        # Render PDF report
+        rmarkdown::render(
+          input = tempReport,
+          output_file = file,
+          params = list(
+            sample_id = selected_sample(),
+            phenotype = phenotype,
+            outres = outres,
+            frares = frares
+          ),
+          envir = new.env(parent = globalenv())
+        )
+      }
+    )
   })
 }
 

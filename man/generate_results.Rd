@@ -4,19 +4,30 @@
 \alias{generate_results}
 \title{Generate OUTRIDER and FRASER results with optional padjust filtering}
 \usage{
-generate_results(ods, fds, padj_out, padj_fra, merged = TRUE)
+generate_results(
+  ods,
+  fds,
+  padj_out = 0.05,
+  padj_fra = 0.05,
+  merged = TRUE,
+  all = FALSE
+)
 }
 \arguments{
-\item{ods}{An OUTRIDER dataset}
+\item{ods}{An OUTRIDER dataset (ODS)}
 
-\item{fds}{A FRASER dataset}
+\item{fds}{A FRASER dataset (FDS)}
 
-\item{merged}{select to return a dataframe containing the samples and genes in both FRASER and OUTRIDER}
+\item{padj_out}{Adjusted p-value threshold for OUTRIDER results (default = 0.05)}
 
-\item{padj_threshold}{Optional adjusted p-value threshold for filtering (default = 0.05)}
+\item{padj_fra}{Adjusted p-value threshold for FRASER results (default = 0.05)}
+
+\item{merged}{Logical; whether to return a merged data.frame containing overlapping samples and genes (default = TRUE)}
+
+\item{all}{Logical; whether to also return unfiltered result tables from OUTRIDER and FRASER (default = FALSE)}
 }
 \value{
-list containing OUTRIDER and FRASER result tables
+A list containing filtered `outres` and `frares`, and optionally `merged`, `outres_all`, `frares_all`
 }
 \description{
 Generate OUTRIDER and FRASER results with optional padjust filtering
