@@ -89,9 +89,9 @@ fixFdsH5Paths <- function(fds,
 #' @importFrom data.table as.data.table
 #' @importFrom OUTRIDER results
 #' @importFrom FRASER results
-generate_results <- function(ods, fds, padj_threshold = 0.05, merged = TRUE) {
-  outres <- as.data.frame(OUTRIDER::results(ods, padjCutoff = padj_threshold))
-  frares <- as.data.table(FRASER::results(fds, padjCutoff = padj_threshold))
+generate_results <- function(ods, fds, padj_out, padj_fra, merged = TRUE) {
+  outres <- as.data.frame(OUTRIDER::results(ods, padjCutoff = padj_out))
+  frares <- as.data.table(FRASER::results(fds, padjCutoff = padj_fra))
 
   frares <- frares %>%
     dplyr::rename(geneID = hgncSymbol) %>%
@@ -320,4 +320,9 @@ merge_outrider_fraser <- function(ores, frares) {
     )
 
   return(collapsed)
+}
+
+
+validate_padj <- function(val) {
+  isTRUE(suppressWarnings(!is.na(as.numeric(val)) & as.numeric(val) >= 0 & as.numeric(val) <= 1))
 }

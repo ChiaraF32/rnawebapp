@@ -21,6 +21,20 @@ mod_process_ui <- function(id) {
           width = 4,
           tags$div(
             style = "text-align:left; padding: 30px;",
+            tags$h1("Select P-adj Cut-off"),
+            numericInput(ns("padj_out"), "OUTRIDER p-adjust threshold", value = 0.05, min = 0, max = 1, step = 0.005),
+            numericInput(ns("padj_fra"), "FRASER p-adjust threshold", value = 0.05, min = 0, max = 1, step = 0.005),
+            checkboxInput(ns("all_res"), "Calculate All Results", value = FALSE),
+            actionButton(ns("process_data"), "Process Data")
+          )
+        )
+      ),
+
+      fluidRow(
+        column(
+          width = 4,
+          tags$div(
+            style = "text-align:left; padding: 30px;",
             tags$h1("Data Processing Progress"),
             uiOutput(ns("check_samples_ui")),
             tags$br(),
@@ -81,11 +95,7 @@ mod_process_server <- function(id, go_to_parameters, go_to_upload, go_to_index, 
     mod_nav_buttons_server("nav_buttons", next_page = go_to_parameters, previous_page = go_to_upload)
     mod_home_button_server("home_btn", go_to_index = go_to_index)
 
-    observeEvent(current_page(), {
-      req(current_page() == ROUTES$PROCESSING)
-
-      message("📍 Navigated to Processing page — starting processing.")
-
+    observeEvent(input$process_data, {
       samplesheet <- uploaded_data$samplesheet
       outrider <- uploaded_data$outrider
       fraser <- uploaded_data$fraser
@@ -105,6 +115,7 @@ mod_process_server <- function(id, go_to_parameters, go_to_upload, go_to_index, 
         }
       }, delay = 0.1)
     })
+
 
     # --- Progress UI Renderer ---
     output$check_samples_ui <- renderUI({
@@ -255,15 +266,18 @@ mod_process_server <- function(id, go_to_parameters, go_to_upload, go_to_index, 
     ## calculate results
     observeEvent(processing_state(), {
       req(processed_data$outrider, processed_data$fraser)
+      req(validate_padj(input$padj_out), validate_padj(input$padj_fra))
       if (processing_state() == "fraser_corrected") {
 
         outrider <- processed_data$outrider
         fraser <- processed_data$fraser
+        padj_out <- input$padj_out
+        padj_fra <- input$padj_fra
 
         later::later(function() {
 
           # Calculate fraser and outrider results
-          results(generate_results(outrider, fraser))
+          results(generate_results(outrider, fraser, padj_out, padj_fra))
           processing_state("results_calculated")
         }, delay = 0.1)
       }

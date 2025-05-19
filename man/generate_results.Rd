@@ -4,16 +4,16 @@
 \alias{generate_results}
 \title{Generate OUTRIDER and FRASER results with optional padjust filtering}
 \usage{
-generate_results(ods, fds, padj_threshold = 0.05, merged = TRUE)
+generate_results(ods, fds, padj_out, padj_fra, merged = TRUE)
 }
 \arguments{
 \item{ods}{An OUTRIDER dataset}
 
 \item{fds}{A FRASER dataset}
 
-\item{padj_threshold}{Optional adjusted p-value threshold for filtering (default = 0.05)}
-
 \item{merged}{select to return a dataframe containing the samples and genes in both FRASER and OUTRIDER}
+
+\item{padj_threshold}{Optional adjusted p-value threshold for filtering (default = 0.05)}
 }
 \value{
 list containing OUTRIDER and FRASER result tables
