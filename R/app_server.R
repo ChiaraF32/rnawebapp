@@ -6,6 +6,8 @@
 #' @noRd
 app_server <- function(input, output, session) {
 
+  message("FRASER version: ", packageVersion("FRASER"))
+
   initialized_modules <- reactiveValues()
 
   # Create a shared, reactive container for uploaded data

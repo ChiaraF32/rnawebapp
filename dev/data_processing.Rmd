@@ -14,14 +14,15 @@ library(OUTRIDER)
 library(FRASER)
 library(biomaRt)
 library(org.Hs.eg.db)
+library(readr)
 ```
 
 Load datasets
 
 ```{r load-data, message=FALSE}
-samplesheet <- read.table("./data/samplesheet.tsv", header=TRUE)
-ods <- readRDS("./data/ods.Rds")
-fds <- readRDS("./data/fds-object.RDS")
+samplesheet <- readr::read_tsv("./data/new/samplesheet.tsv", col_types = cols())
+ods <- readRDS("./data/new/ods.Rds")
+fds <- readRDS("./data/new/fds-object.RDS")
 ```
 
 Define function to fix gene names in ods
@@ -95,8 +96,8 @@ In particular, .h5 files must be in a nested `savedObjects/MUSCLE--v38` director
 #' @export
 #'
 fixFdsH5Paths <- function(fds,
-                          base_path = "./data/savedObjects/MUSCLE--v38/",
-                          working_dir = "./data/",
+                          base_path,
+                          working_dir = "./data/new",
                           verbose = FALSE) {
   fds@workingDir <- working_dir
   
@@ -118,7 +119,7 @@ fixFdsH5Paths <- function(fds,
 }
 
 #fix the paths in the fds object
-fds <- fixFdsH5Paths(fds)
+fds <- fixFdsH5Paths(fds, "/Users/00104561/Library/CloudStorage/OneDrive-UWA/Research/Projects/AIM3_TRANSCRIPTOMICS/app/rnawebapp/data/new/savedObjects/MUSCLE--v113")
 
 ```
 

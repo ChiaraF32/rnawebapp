@@ -40,9 +40,9 @@ mod_index_ui <- function(id){
       tags$h3("Example Analyses"),
 
       fluidRow(
-        column(4, plotOutput(ns("plot1"))),
-        column(4, DT::DTOutput(ns("table1"))),
-        column(4, imageOutput(ns("image1")))
+        column(4, tags$img(src = "www/volcano_plot.png", width = "100%")),
+        column(4, tags$img(src = "www/sashimi_plot.png", width = "100%")),
+        column(4, tags$img(src = "www/gene_plot.png", width = "100%"))
       )
     )
   )
@@ -55,11 +55,6 @@ mod_index_ui <- function(id){
 #' @importFrom shinipsum random_DT random_ggplot random_image
 mod_index_server <- function(id, go_to_upload, go_to_test){
   moduleServer(id, function(input, output, session){
-
-    #Landing page plot placeholders
-    output$plot1 <- renderPlot(shinipsum::random_ggplot(type = "point"))
-    output$table1 <- DT::renderDT(shinipsum::random_DT(nrow = 4, ncol = 5, type = "numchar"))
-    output$image1 <- renderImage(shinipsum::random_image())
 
     observeEvent(input$get_started, {
       showNotification("Let's get started!")

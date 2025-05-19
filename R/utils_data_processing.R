@@ -54,7 +54,7 @@ annotate_ensembl_ids <- function(se, annotation = annotables::grch38) {
 #'
 fixFdsH5Paths <- function(fds,
                           base_path,
-                          working_dir = "./data/old",
+                          working_dir = "./data/new",
                           verbose = FALSE) {
   fds@workingDir <- working_dir
 

@@ -11,7 +11,7 @@ app_ui <- function(request) {
     golem_add_external_resources(),
     # Your application UI logic
     fluidPage(
-      uiOutput("main_ui") #Define ui output to dynamically display one module at a time
+      uiOutput("main_ui"), #Define ui output to dynamically display one module at a time
     )
   )
 }

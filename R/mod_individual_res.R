@@ -47,7 +47,7 @@ mod_individual_res_ui <- function(id) {
           ),
           column(6,
                  tags$h2("FRASER Volcano Plot"),
-                 selectInput(ns("fraser_metric"), "Choose Metric", choices = c("theta", "psi5", "psi3")),
+                 selectInput(ns("fraser_metric"), "Choose Metric", choices = c("jaccard", "theta", "psi5", "psi3")),
                  plotOutput(ns("fraser_volcplot"))
           )
         ),
