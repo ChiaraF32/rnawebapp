@@ -33,6 +33,7 @@ Imports:
     shiny,
     SummarizedExperiment,
     tidyr,
+    tinytex,
     utils
 Suggests: 
     spelling,

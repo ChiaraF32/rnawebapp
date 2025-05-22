@@ -1,12 +1,29 @@
 ---
 title: "Individual Sample Reports"
-output: pdf_document
+output: 
+  pdf_document:
+    latex_engine: xelatex
+    keep_tex: true
+    includes:
+      in_header: 
+        - header.tex
+        - fonts.tex
+fontsize: 11pt
+mainfont: "Arial"
 params:
     sample_id: NA
     phenotype: NA
     frares: NULL
     outres: NULL
+    ods: NULL
+    fds: NULL
+    merged: NULL
+geometry: landscape
 ---
+
+\begin{center}
+\includegraphics[width=0.3\textwidth]{logo.png}
+\end{center}
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
@@ -14,23 +31,39 @@ library(dplyr)
 library(ggplot2)
 library(OUTRIDER)
 library(FRASER)
+library(tinytex)
+```
+
+```{r merged-table}
+knitr::kable(
+  params$merged %>% filter(sampleID == params$sample_id) %>% head(1),
+  format = "latex",
+  caption = "OUTRIDER and FRASER Overlap",
+  booktabs = TRUE
+)
 ```
 
 ```{r outres-table}
-params$outres %>% 
-  filter(sampleID == params$sample_id) %>%
-  head(10)
+knitr::kable(
+  params$outres %>% filter(sampleID == params$sample_id) %>% head(20),
+  format = "latex",
+  caption = "Top OUTRIDER Results for Selected Sample",
+  booktabs = TRUE
+)
 ```
 
 ```{r frares-table}
-params$frares %>% 
-  filter(sampleID == params$sample_id) %>%
-  head(10)
+knitr::kable(
+  params$frares %>% filter(sampleID == params$sample_id) %>% head(20),
+  format = "latex",
+  caption = "Top FRASER Results for Selected Sample",
+  booktabs = TRUE
+)
 ```
 
-```{r OUTRIDER-volcplot, fig.height=4, fig.width=6}
+```{r OUTRIDER-volcplot, fig.height=4, fig.width=8, warning=FALSE, message=FALSE}
 OUTRIDER::plotVolcano(
-  params$outres,
+  params$ods,
   sampleID = params$sample_id,
   xaxis = "zscore",
   label = "aberrant",
@@ -38,12 +71,45 @@ OUTRIDER::plotVolcano(
 )
 ```
 
-```{r frares-volcano, fig.height=4, fig.width=6}
+```{r frares-volcano, fig.height=4, fig.width=8, warning=FALSE, message=FALSE}
 FRASER::plotVolcano(
-  params$frares,
+  params$fds,
   sampleID = params$sample_id,
   type = "jaccard",
   label = "aberrant"
 )
 ```
 
+```{r sashimi-plot, echo=FALSE, results='asis'}
+sashimi_dir <- tempdir()
+sample_id <- params$sample_id
+pattern <- paste0("^", gsub("-", "\\\\-", sample_id), "_.+?_sashimi_plot\\.png$")
+
+sashimi_files <- list.files(sashimi_dir, pattern = pattern, full.names = TRUE)
+
+if (length(sashimi_files) == 0) {
+  cat("No sashimi plots found for this sample.")
+} else {
+  for (i in seq_along(sashimi_files)) {
+    img <- sashimi_files[i]
+    coord <- sub(paste0("^", sample_id, "_"), "", basename(img))
+    coord <- sub("_sashimi_plot\\.png$", "", coord)
+
+    # Begin minipage
+    cat("\\begin{minipage}[t]{0.48\\textwidth}\n")
+    cat(paste0("\\centering\n\\includegraphics[width=\\linewidth]{", img, "}\n"))
+    cat(paste0("\\captionof{figure}{Sashimi Plot: ", coord, "}\n"))
+    cat("\\end{minipage}\n")
+
+    # Add space or newline between plots
+    if (i %% 2 == 1) {
+      cat("\\hfill\n")  # between first and second plot
+    } else {
+      cat("\\\\[1.5em]\n")  # after second plot, add vertical space
+    }
+  }
+
+  # Force page break after all plots
+  cat("\\newpage\n")
+}
+```

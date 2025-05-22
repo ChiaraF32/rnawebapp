@@ -32,7 +32,7 @@ generate_sashimi_plot <- function(
     bam_dir,
     gtf_file = "./data/Homo_sapiens.GRCh38.113.gtf",
     control_labels = NULL,
-    output_dir = ".",
+    output_dir = "./generated/plots",
     padding = 1000,
     ggsashimi_path = "./ggsashimi.py"
 ) {
@@ -41,6 +41,11 @@ generate_sashimi_plot <- function(
   library(gridExtra)
   library(magick)
   library(pdftools)
+
+  # Create output directory if it doesn't exist
+  if (!dir.exists(output_dir)) {
+    dir.create(output_dir, recursive = TRUE)
+  }
 
   # Check sample/coord availability
   if (nrow(result_object) == 0 || is.na(sample_index)) {

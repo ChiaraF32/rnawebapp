@@ -11,7 +11,7 @@ generate_sashimi_plot(
   bam_dir,
   gtf_file = "./data/Homo_sapiens.GRCh38.113.gtf",
   control_labels = NULL,
-  output_dir = ".",
+  output_dir = "./generated/plots",
   padding = 1000,
   ggsashimi_path = "./ggsashimi.py"
 )

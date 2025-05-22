@@ -266,10 +266,32 @@ mod_individual_res_server <- function(id, go_to_parameters, go_to_index, uploade
         # Extract results
         outres <- processed_data$annotated_results$outres
         frares <- processed_data$annotated_results$frares
+        merged <- processed_data$merged
+
+        # Extract datasets
+        ods <- processed_data$outrider
+        fds <- processed_data$fraser
 
         # Copy Rmd template to temp directory
-        tempReport <- file.path(tempdir(), "report_template.Rmd")
+        temp_dir <- tempdir()
+        tempReport <- file.path(temp_dir, "report_template.Rmd")
+        tempHeader <- file.path(temp_dir, "header.tex")
+        tempLogo <- file.path(temp_dir, "logo.png")
+        tempFonts <- file.path(temp_dir, "fonts.tex")
+        sample_id <- selected_sample()
+        sashimi_dir <- file.path("generated/plots")  # your image source dir
+        sashimi_files <- list.files(
+          sashimi_dir,
+          pattern = paste0("^", sample_id, "_.*sashimi_plot\\.png$"),
+          full.names = TRUE
+        )
+
+        # Copy to tempdir so Rmd can access them
+        file.copy(sashimi_files, temp_dir, overwrite = TRUE)
         file.copy("inst/reports/report_template.Rmd", tempReport, overwrite = TRUE)
+        file.copy("inst/reports/header.tex", tempHeader, overwrite = TRUE)
+        file.copy("inst/reports/fonts.tex", tempFonts, overwrite = TRUE)
+        file.copy("inst/reports/logo.png", tempLogo, overwrite = TRUE)
 
         # Render PDF report
         rmarkdown::render(
@@ -279,7 +301,10 @@ mod_individual_res_server <- function(id, go_to_parameters, go_to_index, uploade
             sample_id = selected_sample(),
             phenotype = phenotype,
             outres = outres,
-            frares = frares
+            frares = frares,
+            ods = ods,
+            fds = fds,
+            merged = merged
           ),
           envir = new.env(parent = globalenv())
         )
