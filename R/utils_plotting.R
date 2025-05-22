@@ -138,56 +138,62 @@ generate_sashimi_plot <- function(
   return(list(pdf = output_pdf, png = output_png))
 }
 
-#' Generate a faceted violin-boxplot of gene expression across samples
+#' Generate a faceted violin-boxplot of gene expression with highlighted sample and padj labels
 #'
 #' @description
-#' This function plots normalized expression values for one or more genes from an OUTRIDER dataset
-#' across all samples. Each gene is displayed in a separate facet. A specified sample is highlighted
-#' in red for easy comparison.
+#' This function visualizes normalized expression values for one or more genes from an OUTRIDER dataset
+#' across all samples. Each gene is displayed in a separate facet with violin and boxplots to show distribution.
+#' A specified sample is highlighted in red, with its adjusted p-value (`padj`) displayed as a label above the point.
 #'
 #' @param ods An OUTRIDER dataset (SummarizedExperiment object)
 #' @param genes A character vector of gene symbols or Ensembl IDs to plot
 #' @param sampleID A character string specifying the sample ID to highlight
 #'
-#' @return A ggplot2 object showing expression distributions with violin and boxplots, faceted by gene
+#' @return A ggplot2 object showing expression distributions with violin and boxplots, faceted by gene,
+#'         with the specified sample highlighted and labeled by its padj value
 #' @export
 #'
-#' @importFrom dplyr filter
+#' @importFrom dplyr filter mutate
 #' @importFrom tidyr gather
-#' @importFrom ggplot2 ggplot geom_violin geom_boxplot geom_point facet_wrap theme element_blank labs aes
+#' @importFrom ggplot2 ggplot geom_violin geom_boxplot geom_point geom_text facet_wrap theme element_blank labs aes
 #' @importFrom SummarizedExperiment rownames
-#' @importFrom OUTRIDER counts
+#' @importFrom OUTRIDER counts padj
 
 plot_gene_expression_multi <- function(ods, genes, sampleID) {
-  # Extract and reshape normalized counts
+  # Extract and reshape normalized counts and padj
   counts_norm <- as.data.frame(counts(ods, normalized = TRUE))
   counts_norm$geneID <- rownames(counts_norm)
+
+  padj <- as.data.frame(padj(ods))
+  padj$geneID <- rownames(padj)
 
   long_counts <- counts_norm %>%
     tidyr::gather("sample_ID", "counts", -geneID) %>%
     dplyr::filter(geneID %in% genes)
 
+  long_padj <- padj %>%
+    tidyr::gather("sample_ID", "padj", -geneID) %>%
+    dplyr::filter(geneID %in% genes)
+
+  merged_long <- dplyr::left_join(long_counts, long_padj, by = c("geneID", "sample_ID"))
+
   # Highlighted sample
-  highlight <- dplyr::filter(long_counts, sample_ID == sampleID)
-  other <- dplyr::filter(long_counts, sample_ID != sampleID)
+  highlight <- dplyr::filter(merged_long, sample_ID == sampleID)
+  other <- dplyr::filter(merged_long, sample_ID != sampleID)
+
+  # Round padj for display
+  highlight <- highlight %>%
+    dplyr::mutate(padj_label = sprintf("padj=%.3g", padj))
 
   # Plot
   p <- ggplot(other, aes(x = factor(0), y = counts)) +
     facet_wrap(~geneID, scales = "free_y") +
     geom_violin(fill = "white") +
     geom_boxplot(width = 0.3, outlier.shape = NA) +
-    #geom_jitter(color = "darkgrey", size = 1, alpha = 0.8) +
     geom_point(data = highlight, aes(x = factor(0), y = counts), color = "red", size = 2) +
-    theme(
-      axis.text.x = element_blank(),
-      axis.ticks.x = element_blank(),
-      axis.title.x = element_blank()
-    ) +
-    labs(
-      x = NULL,
-      y = "Expression (normalized counts)",
-      title = paste("Expression for", paste(genes, collapse = ", "))
-    )
+    geom_text(data = highlight, aes(x = factor(0), y = counts, label = padj_label), color = "red", hjust = -0.2, vjust = -0.2, size = 3.5) +
+    theme(axis.text.x = element_blank(), axis.ticks.x = element_blank(), axis.title.x = element_blank()) +
+    labs(x = NULL, y = "Expression (normalized counts)", title = paste("Expression for", paste(genes, collapse = ", ")))
 
   return(p)
 }
