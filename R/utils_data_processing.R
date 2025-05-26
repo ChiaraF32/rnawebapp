@@ -338,15 +338,6 @@ plot_phenotype_distribution <- function(samplesheet) {
     )
 }
 
-get_rna_fusions <- function(samplesheet) {
-  if (!"FUSIONS" %in% colnames(samplesheet)) {
-    stop(paste0(
-      "The samplesheet must contain a 'FUSIONS' column. Found columns: ",
-      paste(colnames(samplesheet), collapse = ", ")
-    ))
-  }
-
-}
 
 #' Merge OUTRIDER and FRASER Results by Gene and Sample
 #'

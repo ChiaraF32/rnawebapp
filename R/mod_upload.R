@@ -21,7 +21,6 @@ mod_upload_ui <- function(id) {
       fileInput(ns("outrider"), "2. Upload OUTRIDER Dataset"),
       fileInput(ns("fraser"), "3. Upload FRASER Dataset"),
       fileInput(ns("vcf"), "4. Upload RNA Variant Calls"),
-      fileInput(ns("fusions"), "5. Upload RNA SV/Fusion Calls"),
       textInput(ns("fraser_dir"), "6. Specify Path to FRASER Datasets", placeholder = "./savedObjects/MUSCLE--v38/")
       )
   )

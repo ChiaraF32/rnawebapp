@@ -250,7 +250,10 @@ mod_individual_res_server <- function(id, go_to_parameters, go_to_index, uploade
 
     output$rvc_table <- renderDT(random_DT(nrow = 6, ncol = 9, type = "numchar"))
 
-    output$fusionsv_table <- renderDT(random_DT(nrow = 6, ncol = 9, type = "numchar"))
+    output$fusionsv_table <- render_rna_fusions(uploaded_data$samplesheet, sample_id = reactive({
+      req(results_ready())
+      selected_sample()
+    }))
 
     output$download <- downloadHandler(
       filename = function() {
