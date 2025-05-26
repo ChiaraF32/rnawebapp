@@ -223,18 +223,18 @@ mod_process_server <- function(id, go_to_parameters, go_to_upload, go_to_index, 
 
     ## change the BAM paths
     observeEvent(processing_state(), {
-      req(processed_data$outrider, uploaded_data$fraser, uploaded_data$bam_dir)
+      req(processed_data$outrider, uploaded_data$fraser, uploaded_data$samplesheet)
       if (processing_state() == "genes_converted") {
 
         outrider <- processed_data$outrider
         fraser <- uploaded_data$fraser
-        bam_dir <- uploaded_data$bam_dir
+        samplesheet <- uploaded_data$samplesheet
 
         later::later(function() {
 
           #Fix paths to BAM files
-          outrider_fixed <- update_bam_paths(outrider, bam_dir)
-          fraser_fixed <- update_bam_paths(fraser, bam_dir)
+          outrider_fixed <- update_bam_paths(outrider, samplesheet)
+          fraser_fixed <- update_bam_paths(fraser, samplesheet)
 
           # Save back to uploaded date
           processed_data$outrider <- outrider_fixed

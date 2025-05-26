@@ -220,7 +220,7 @@ mod_individual_res_server <- function(id, go_to_parameters, go_to_index, uploade
     sashimi_path <- reactiveVal(NULL)
 
     observeEvent(input$plot_sashimi, {
-      req(uploaded_data$bam_dir, input$select_event, input$controls, length(input$controls) >= 2)
+      req(uploaded_data$samplesheet, input$select_event, input$controls, length(input$controls) >= 2)
 
       filtered_data <- filtered_annotated_table(processed_data$annotated_results$frares, samples = selected_sample())
 

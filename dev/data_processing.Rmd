@@ -20,7 +20,7 @@ library(readr)
 Load datasets
 
 ```{r load-data, message=FALSE}
-samplesheet <- readr::read_tsv("./data/new/samplesheet.tsv", col_types = cols())
+samplesheet <- readr::read_tsv("./data/new/samplesheet_01.tsv", col_types = cols())
 ods <- readRDS("./data/new/ods.Rds")
 fds <- readRDS("./data/new/fds-object.RDS")
 ```
@@ -195,9 +195,26 @@ update_bam_paths <- function(object, new_base_path) {
   return(object)
 }
 
+update_bam_paths <- function(object, samplesheet) {
+  # Step 1: Extract the base filenames from both vectors
+  object_files <- basename(colData(object)$RNA_BAM_FILE)
+  samplesheet_files <- basename(samplesheet$RNA_BAM_FILE)
+
+  # Step 2: Identify which files in samplesheet match ods by filename
+  matches <- samplesheet_files %in% ods_files
+
+  # Step 3: Subset the full paths from samplesheet using the match
+  matched_paths <- samplesheet$RNA_BAM_FILE[matches]
+  
+  # Step 4: change the filepaths
+  colData(object)$RNA_BAM_FILE <- matched_paths
+  colData(object)$bamFile <- Rsamtools::BamFileList(matched_paths)
+
+  return(object)
+}
+
 # Define the new base path
-new_base_path <- "/Volumes/PERKINS-LL-001/Sequencing/rnaseq/secondary/nfcore/2024-12-16_GenomicsWA_Realigned/star_salmon"
-ods <- update_bam_paths(ods, new_base_path)
+ods <- update_bam_paths(ods, samplesheet)
 fds <- update_bam_paths(fds, new_base_path)
 
 ```

@@ -89,8 +89,8 @@ generate_sashimi_plot <- function(
   region_expanded <- paste0(chrom, ":", start, "-", end)
 
   # Prepare file paths
-  sample_bam <- file.path(bam_dir, paste0(sample, ".markdup.sorted.bam"))
-  control_bams <- file.path(bam_dir, paste0(controls, ".markdup.sorted.bam"))
+  sample_bam <- samplesheet$RNA_BAM_FILE[grep(sample, basename(samplesheet$RNA_BAM_FILE))]
+  control_bams <- samplesheet$RNA_BAM_FILE[grep(paste(controls, collapse = "|"), basename(samplesheet$RNA_BAM_FILE))]
 
   bam_files <- c(sample_bam, control_bams)
   samples <- c(sample, controls)

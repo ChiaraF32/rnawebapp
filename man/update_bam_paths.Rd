@@ -2,18 +2,20 @@
 % Please edit documentation in R/utils_data_processing.R
 \name{update_bam_paths}
 \alias{update_bam_paths}
-\title{Update BAM file paths for OUTRIDER or FRASER objects}
+\title{Update BAM file paths in an OUTRIDER or FRASER object using a samplesheet}
 \usage{
-update_bam_paths(object, new_base_path)
+update_bam_paths(object, samplesheet)
 }
 \arguments{
-\item{object}{An OUTRIDER or FRASER dataset object (ods or fds)}
+\item{object}{An OUTRIDER or FRASER dataset object (e.g., `ods` or `fds`)}
 
-\item{new_base_path}{The new directory where BAM files are located}
+\item{samplesheet}{A data frame containing a column `RNA_BAM_FILE` with updated BAM file paths}
 }
 \value{
-The updated dataset object with corrected BAM file paths
+The updated object with `colData(object)$RNA_BAM_FILE` and `colData(object)$bamFile` corrected
 }
 \description{
-Update BAM file paths for OUTRIDER or FRASER objects
+This function updates the `RNA_BAM_FILE` and `bamFile` fields in the `colData`
+of an OUTRIDER or FRASER dataset object using a provided samplesheet.
+Matching is performed by comparing BAM filenames (i.e., basename of the path).
 }

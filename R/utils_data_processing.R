@@ -152,29 +152,36 @@ generate_results <- function(ods, fds, padj_out = 0.05, padj_fra = 0.05, merged 
 }
 
 
-#' Update BAM file paths for OUTRIDER or FRASER objects
+#' Update BAM file paths in an OUTRIDER or FRASER object using a samplesheet
 #'
-#' @param object An OUTRIDER or FRASER dataset object (ods or fds)
-#' @param new_base_path The new directory where BAM files are located
+#' This function updates the `RNA_BAM_FILE` and `bamFile` fields in the `colData`
+#' of an OUTRIDER or FRASER dataset object using a provided samplesheet.
+#' Matching is performed by comparing BAM filenames (i.e., basename of the path).
 #'
-#' @return The updated dataset object with corrected BAM file paths
+#' @param object An OUTRIDER or FRASER dataset object (e.g., `ods` or `fds`)
+#' @param samplesheet A data frame containing a column `RNA_BAM_FILE` with updated BAM file paths
+#'
+#' @return The updated object with `colData(object)$RNA_BAM_FILE` and `colData(object)$bamFile` corrected
 #' @export
 #'
 #' @import Rsamtools
-#' @importFrom SummarizedExperiment colData mcols
-update_bam_paths <- function(object, new_base_path) {
-  if (!dir.exists(new_base_path)) {
-    stop("❌ Provided base path does not exist: ", new_base_path)
+#' @importFrom SummarizedExperiment colData
+update_bam_paths <- function(object, samplesheet) {
+  # Extract base filenames
+  object_files <- basename(colData(object)$RNA_BAM_FILE)
+  samplesheet_files <- basename(samplesheet$RNA_BAM_FILE)
+
+  # Match filenames
+  matched_indices <- match(object_files, samplesheet_files)
+
+  if (any(is.na(matched_indices))) {
+    warning("Some BAM files in the object could not be matched to the samplesheet and will be set to NA.")
   }
 
-  if (!"RNA_BAM_FILE" %in% colnames(colData(object))) {
-    stop("❌ Input object does not contain a 'RNA_BAM_FILE' column in colData.")
-  }
-
-  # Update BAM paths
-  updated_bam_paths <- file.path(new_base_path, basename(SummarizedExperiment::colData(object)$RNA_BAM_FILE))
-  SummarizedExperiment::colData(object)$RNA_BAM_FILE <- updated_bam_paths
-  SummarizedExperiment::colData(object)$bamFile <- Rsamtools::BamFileList(updated_bam_paths)
+  # Assign full paths where matched
+  new_paths <- samplesheet$RNA_BAM_FILE[matched_indices]
+  SummarizedExperiment::colData(object)$RNA_BAM_FILE <- new_paths
+  SummarizedExperiment::colData(object)$bamFile <- Rsamtools::BamFileList(new_paths)
 
   return(object)
 }
@@ -329,6 +336,16 @@ plot_phenotype_distribution <- function(samplesheet) {
       x = "Phenotype",
       y = "Count"
     )
+}
+
+get_rna_fusions <- function(samplesheet) {
+  if (!"FUSIONS" %in% colnames(samplesheet)) {
+    stop(paste0(
+      "The samplesheet must contain a 'FUSIONS' column. Found columns: ",
+      paste(colnames(samplesheet), collapse = ", ")
+    ))
+  }
+
 }
 
 #' Merge OUTRIDER and FRASER Results by Gene and Sample
