@@ -92,3 +92,43 @@ render_rna_fusions <- function(samplesheet, sample_id) {
     util_nowrap_dt(df)
   })
 }
+
+#' Filter and render RNA VCF variants for a selected sample in Shiny
+#'
+#' Filters a VCF-like data frame to return only variants where \code{FILTER == "PASS_rare"}
+#' and the genotype for the selected sample is either \code{"0/1"} or \code{"1/1"},
+#' then renders the result as a DataTable in a Shiny app.
+#'
+#' @param rna_data A \code{data.table} or \code{data.frame} containing VCF-style variant data.
+#'   Must include a \code{FILTER} column and sample genotype columns.
+#' @param sample_id A reactive expression returning the sample ID (character string) to filter on.
+#'
+#' @return A Shiny render function that outputs a filtered \code{DT::datatable}.
+#'
+#' @examples
+#' \dontrun{
+#' output$filtered_table <- filtered_VC(rna_data = my_data, sample_id = reactive("D21-0076"))
+#' }
+#'
+#' @export
+#' @importFrom shiny req
+#' @importFrom DT renderDT
+#' @importFrom data.table as.data.table
+filtered_VC <- function(rna_data, sample_id) {
+  renderDT({
+    req(rna_data, sample_id())
+
+    sample <- sample_id()
+
+    filtered <- rna_data %>%
+      dplyr::filter(FILTER == "PASS_rare", .data[[sample]] %in% c("0/1", "1/1"))
+
+    priority_cols <- c("VARIANT", "GENE_ID", "GENE_NAME", "FILTER", "MAX_AF", "cohortFreq")
+    remaining_cols <- setdiff(names(filtered), priority_cols)
+    reordered_cols <- c(priority_cols, sample, setdiff(remaining_cols, sample))
+
+    filtered <- filtered %>% dplyr::select(all_of(reordered_cols))
+
+    util_nowrap_dt(filtered)
+  })
+}

@@ -2,6 +2,7 @@
 
 export(annotate_ensembl_ids)
 export(annotate_results_with_omim_go)
+export(filtered_VC)
 export(filtered_annotated_table)
 export(fixFdsH5Paths)
 export(generate_results)

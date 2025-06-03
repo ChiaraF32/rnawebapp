@@ -20,7 +20,7 @@ mod_upload_ui <- function(id) {
       fileInput(ns("samplesheet"), "1. Upload Samplesheet"),
       fileInput(ns("outrider"), "2. Upload OUTRIDER Dataset"),
       fileInput(ns("fraser"), "3. Upload FRASER Dataset"),
-      fileInput(ns("vcf"), "4. Upload RNA Variant Calls"),
+      fileInput(ns("rna_vcf"), "4. Upload RNA Variant Calls"),
       textInput(ns("fraser_dir"), "6. Specify Path to FRASER Datasets", placeholder = "./savedObjects/MUSCLE--v38/")
       )
   )
@@ -55,6 +55,11 @@ mod_upload_server <- function(id, go_to_processing, go_to_index, uploaded_data){
     observeEvent(input$fraser_dir, {
       req(input$fraser_dir)
       uploaded_data$fraser_dir <- input$fraser_dir
+    })
+
+    observeEvent(input$rna_vcf, {
+      req(input$rna_vcf)
+      uploaded_data$rna_vcf <- readRDS(input$rna_vcf$datapath)
     })
 
     # Optional: observe file uploads for debug or processing

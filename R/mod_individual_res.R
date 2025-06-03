@@ -227,7 +227,7 @@ mod_individual_res_server <- function(id, go_to_parameters, go_to_index, uploade
       result_paths <- generate_sashimi_plot(
         result_object = filtered_data,
         sample_index = as.integer(input$select_event),
-        bam_dir = uploaded_data$bam_dir,
+        samplesheet = uploaded_data$samplesheet,
         controls = input$controls
       )
 
@@ -248,7 +248,10 @@ mod_individual_res_server <- function(id, go_to_parameters, go_to_index, uploade
       )
     }, deleteFile = FALSE)
 
-    output$rvc_table <- renderDT(random_DT(nrow = 6, ncol = 9, type = "numchar"))
+    output$rvc_table <- filtered_VC(uploaded_data$rna_vcf, sample_id = reactive({
+      req(results_ready())
+      selected_sample()
+    }))
 
     output$fusionsv_table <- render_rna_fusions(uploaded_data$samplesheet, sample_id = reactive({
       req(results_ready())

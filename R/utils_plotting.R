@@ -12,7 +12,7 @@
 #' @param gtf_file Path to the GTF file used for annotation (e.g., `"./data/Homo_sapiens.GRCh38.113.gtf"`).
 #' @param controls Character vector of sample IDs to use as controls (must match BAM filenames).
 #' @param control_labels Character vector of labels corresponding to each control (same length as `controls`).
-#' @param bam_dir Directory containing all BAM files, named as `<sampleID>.markdup.sorted.bam`.
+#' @param samplesheet Samplesheet containing paths to all BAM files, named as `<sampleID>.markdup.sorted.bam`.
 #' @param output_dir Directory where the output PDF and PNG files should be saved. Default is current directory.
 #' @param padding Number of base pairs to pad upstream and downstream of the target region. Default is 1000.
 #' @param ggsashimi_path Path to the `ggsashimi.py` script. Default assumes it's in the working directory.
@@ -29,7 +29,7 @@ generate_sashimi_plot <- function(
     result_object,
     sample_index,
     controls,
-    bam_dir,
+    samplesheet,
     gtf_file = "./data/Homo_sapiens.GRCh38.113.gtf",
     control_labels = NULL,
     output_dir = "./generated/plots",

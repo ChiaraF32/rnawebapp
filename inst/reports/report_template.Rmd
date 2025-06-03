@@ -18,12 +18,13 @@ params:
     ods: NULL
     fds: NULL
     merged: NULL
-geometry: landscape
+geometry: landscape, left=1cm, right=1cm, top=1.5cm, bottom=1.5cm
 ---
 
 \begin{center}
 \includegraphics[width=0.3\textwidth]{logo.png}
 \end{center}
+\vspace*{2cm}
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
@@ -32,33 +33,32 @@ library(ggplot2)
 library(OUTRIDER)
 library(FRASER)
 library(tinytex)
+library(kableExtra)
 ```
 
 ```{r merged-table}
-knitr::kable(
-  params$merged %>% filter(sampleID == params$sample_id) %>% head(1),
-  format = "latex",
-  caption = "OUTRIDER and FRASER Overlap",
-  booktabs = TRUE
-)
+params$merged %>%
+  filter(sampleID == params$sample_id) %>%
+  head(1) %>%
+  knitr::kable(format = "latex", caption = "OUTRIDER and FRASER Overlap", booktabs = TRUE) %>%
+  kable_styling(latex_options = "hold_position", font_size = 9)
 ```
 
 ```{r outres-table}
-knitr::kable(
-  params$outres %>% filter(sampleID == params$sample_id) %>% head(20),
-  format = "latex",
-  caption = "Top OUTRIDER Results for Selected Sample",
-  booktabs = TRUE
-)
+params$outres %>%
+  filter(sampleID == params$sample_id) %>%
+  head(20) %>%
+  knitr::kable(format = "latex", caption = "Top OUTRIDER Results for Selected Sample", booktabs = TRUE) %>%
+  kable_styling(latex_options = c("scale_down", "hold_position"), font_size = 9)
+
 ```
 
 ```{r frares-table}
-knitr::kable(
-  params$frares %>% filter(sampleID == params$sample_id) %>% head(20),
-  format = "latex",
-  caption = "Top FRASER Results for Selected Sample",
-  booktabs = TRUE
-)
+params$frares %>%
+  filter(sampleID == params$sample_id) %>%
+  head(20) %>%
+  knitr::kable(format = "latex", caption = "Top FRASER Results for Selected Sample", booktabs = TRUE) %>%
+  kable_styling(latex_options = c("scale_down", "hold_position"), font_size = 9)
 ```
 
 ```{r OUTRIDER-volcplot, fig.height=4, fig.width=8, warning=FALSE, message=FALSE}
@@ -90,26 +90,17 @@ sashimi_files <- list.files(sashimi_dir, pattern = pattern, full.names = TRUE)
 if (length(sashimi_files) == 0) {
   cat("No sashimi plots found for this sample.")
 } else {
-  for (i in seq_along(sashimi_files)) {
-    img <- sashimi_files[i]
+  for (img in sashimi_files) {
     coord <- sub(paste0("^", sample_id, "_"), "", basename(img))
     coord <- sub("_sashimi_plot\\.png$", "", coord)
 
-    # Begin minipage
-    cat("\\begin{minipage}[t]{0.48\\textwidth}\n")
-    cat(paste0("\\centering\n\\includegraphics[width=\\linewidth]{", img, "}\n"))
+    cat("\\begin{minipage}[t]{\\textwidth}\n")
+    cat(paste0("\\centering\n\\includegraphics[width=0.95\\textwidth]{", img, "}\n"))
     cat(paste0("\\captionof{figure}{Sashimi Plot: ", coord, "}\n"))
     cat("\\end{minipage}\n")
-
-    # Add space or newline between plots
-    if (i %% 2 == 1) {
-      cat("\\hfill\n")  # between first and second plot
-    } else {
-      cat("\\\\[1.5em]\n")  # after second plot, add vertical space
-    }
+    cat("\\\\[2em]\n")  # vertical spacing between plots
   }
 
-  # Force page break after all plots
   cat("\\newpage\n")
 }
 ```

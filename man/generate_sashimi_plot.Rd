@@ -8,7 +8,7 @@ generate_sashimi_plot(
   result_object,
   sample_index,
   controls,
-  bam_dir,
+  samplesheet,
   gtf_file = "./data/Homo_sapiens.GRCh38.113.gtf",
   control_labels = NULL,
   output_dir = "./generated/plots",
@@ -24,7 +24,7 @@ with fields `sampleID` and `coord`, where `coord` is in the format `"chr:start-e
 
 \item{controls}{Character vector of sample IDs to use as controls (must match BAM filenames).}
 
-\item{bam_dir}{Directory containing all BAM files, named as `<sampleID>.markdup.sorted.bam`.}
+\item{samplesheet}{Samplesheet containing paths to all BAM files, named as `<sampleID>.markdup.sorted.bam`.}
 
 \item{gtf_file}{Path to the GTF file used for annotation (e.g., `"./data/Homo_sapiens.GRCh38.113.gtf"`).}
 
