@@ -29,7 +29,7 @@ mod_cohort_res_ui <- function(id) {
                  uiOutput(ns("select_gene")),
                  uiOutput(ns("select_sample")),
                  numericInput(ns("plot_number"), "Choose number of panels", value = 6, min = 1, max = 12, step = 1),
-                 actionButton(ns("display_results"), label = "Display Results", class = "btn btn-success")),
+                 mod_display_trigger_ui(ns("display_trigger"))),
           column(8,
                  plotOutput(ns("gene_plot")),
                  fluidRow(
@@ -57,7 +57,7 @@ mod_cohort_res_ui <- function(id) {
           column(6,
                  style = "text-align:left; padding: 20px;",
                  tags$br(),
-                 actionButton(ns("download"), "Download Report", class = "btn btn-success"))
+                 mod_export_excel_ui(ns("export_excel")))
         )
       )
     )
@@ -82,24 +82,12 @@ mod_cohort_res_server <- function(id, go_to_parameters, go_to_index, uploaded_da
     mod_home_button_server("home_btn", go_to_index = go_to_index)
 
     #reactive logic for action button
-    results_ready <- reactiveVal(FALSE)
-
-    observeEvent(input$display_results, {
-      req(all_selected_genes(), selected_sample())
-      results_ready(TRUE)
-    })
-
-    observeEvent(input$select_sample, {
-      results_ready(FALSE)
-    })
-
-    observeEvent(input$select_gene, {
-      results_ready(FALSE)
-    })
-
-    observeEvent(input$select_phenotype, {
-      results_ready(FALSE)
-    })
+    results_ready <- mod_display_trigger_server(
+      "display_trigger",
+      reset_when = reactive({
+        list(input$select_gene, input$select_sample, input$select_phenotype)
+      })
+    )
 
     selected_sample <- reactive({
       req(input$select_sample)
@@ -161,8 +149,7 @@ mod_cohort_res_server <- function(id, go_to_parameters, go_to_index, uploaded_da
 
     #Create reactive for selected gene
     selected_gene <- reactive({
-      req(input$select_gene)
-      input$select_gene
+      if (is.null(input$select_gene)) character() else input$select_gene
     })
 
     # Define pagination logic to display gene plots across multiple pages
@@ -257,6 +244,19 @@ mod_cohort_res_server <- function(id, go_to_parameters, go_to_index, uploaded_da
         nowrap_columns = c("GO_TERMS", "Phenotypes")
       )
     })
+
+    mod_export_excel_server(
+      id = "export_excel",
+      fraser_data = reactive({
+        req(results_ready(), processed_data$annotated_results)
+        filtered_annotated_table(processed_data$annotated_results$frares, all_selected_genes())
+      }),
+      outrider_data = reactive({
+        req(results_ready(), processed_data$annotated_results)
+        filtered_annotated_table(processed_data$annotated_results$outres, all_selected_genes())
+      }),
+      enabled = results_ready
+    )
   })
 }
 
