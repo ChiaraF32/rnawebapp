@@ -107,6 +107,8 @@ mod_individual_res_server <- function(id, go_to_parameters, go_to_index, uploade
   moduleServer(id, function(input, output, session){
     ns <- session$ns
 
+
+    # reactive logic for action button
     results_ready <- reactiveVal(FALSE)
 
     observeEvent(input$display_results, {

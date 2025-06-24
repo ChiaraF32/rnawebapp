@@ -1,0 +1,119 @@
+---
+title: "rnaVariantCalling"
+author: "Chiara Folland"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = "/Users/00104561/Library/CloudStorage/OneDrive-UWA/Research/Projects/AIM3_TRANSCRIPTOMICS/app/rnawebapp")
+library(dplyr)
+library(ggplot2)
+library(DT)
+library(data.table)
+```
+
+```{r load, include=FALSE}
+rna_data<-readRDS("data/new/MUSCLE_v113_data_table.Rds")
+```
+
+```{r vcf, message=FALSE}
+#' Filter RNA VCF for rare heterozygous or homozygous alternate variants
+#'
+#' Filters a VCF-like data frame to return only rows where the variant passed
+#' rare filtering (`FILTER == "PASS_rare"`) and the given sample has a genotype
+#' of `"0/1"` (heterozygous) or `"1/1"` (homozygous alternate).
+#'
+#' @param rna_vcf A data frame containing VCF-style variant data. Must include
+#'   a `FILTER` column and a genotype column named after the sample ID.
+#' @param sample_ID A string giving the name of the column containing the sample's genotype.
+#'
+#' @return A data frame of filtered variants for the specified sample.
+#'
+#' @examples
+#' filtered <- filtered_VC(rna_vcf = my_vcf_data, sample_ID = "D21-0076")
+#' head(filtered)
+#'
+#' @export
+#'
+#' @importFrom shiny req
+#' @importFrom DT renderDT
+#' @import data.table
+filtered_VC <- function(rna_data, sample_id) {
+  renderDT({
+    req(sample_id())
+    df<- rna_data[FILTER == "PASS_rare" & rna_data[[sample_id]] %in% c("0/1", "1/1")]
+    util_nowrap_dt(df)
+  })
+}
+
+filtered_VC(rna_data, "D14-1712")
+
+```
+
+```{r explore, message=FALSE}
+#' ## Variant Calling Tables (first 1,000)
+
+if (!all(is.na(rna_data$MAX_AF))) {
+  DT::datatable(
+    head(rna_data[FILTER == "PASS_rare" & `3804` %in% c("0/1", "1/1")], 1000),
+    caption = 'Rare Variants called from RNA (up to 1,000 rows shown)',
+    options=list(scrollX=TRUE),
+    filter = 'top')
+}
+
+if (!all(is.na(rna_data$MAX_AF))) {
+  DT::datatable(
+    head(rna_data[FILTER == "PASS_rare"], 1000),
+    caption = 'Rare Variants called from RNA (up to 1,000 rows shown)',
+    options=list(scrollX=TRUE),
+    filter = 'top')
+}
+
+# melt filters by GT. Exclude reference calls. Read in batches to avoid vector length errors for large datasets
+
+# generate batch lists by config value: yieldSize
+batches <- seq(0,nrow(res_plot),100000)
+if(batches[length(batches)] < nrow(res_plot)) batches <- c(batches,nrow(res_plot))
+
+# build dts by batches
+out <- lapply(1:(length(batches)-1), function(i){
+  melt(res_plot[(1 +batches[i]):batches[i+1]], #read through batches 1
+       id.vars = "FILTER",value.name = "GT")[GT != "0/0",.N,by = c("FILTER","variable","GT")]
+})
+
+# combine batches and sum up the variables
+res_plot <- rbindlist(out)[,.(N = sum(N)),by = c("FILTER","variable","GT")]
+
+#' ## Table of variant calls by GT (first 1,000)
+summary_dt <- dcast(res_plot, FILTER + GT ~ variable, value.var = "N")
+DT::datatable(
+  head(summary_dt,1000),
+  caption = "Variant filters by GT", 
+  options=list(scrollY=TRUE),
+  filter = 'top')
+
+#' ### Breakdown of variants by GT
+ggplot(res_plot, aes(x = FILTER, y = N,col = GT)) +
+  geom_boxplot() +
+  geom_text(data = res_plot[,median(N),by=c("FILTER","GT")],
+            mapping = aes(x=FILTER,y= V1,label = V1, vjust = -0.5),position = position_dodge(0.9),show.legend = F,size = 3.5) +
+  ylab("Variants per sample") + scale_x_discrete(guide = guide_axis(n.dodge = 2)) + theme_bw()
+
+# Split res
+res_plot[grepl("PASS",FILTER),FILTER := "PASS"]
+res_plot[!grepl("PASS",FILTER),FILTER := "FILTERED OUT"]
+
+res_plot_summary <- res_plot[,sum(N),by = .(FILTER,variable,GT)]
+
+#' ### Plot only Pass/Fail split
+ggplot(res_plot_summary, aes(x = FILTER, y = V1,col = GT)) +
+  geom_boxplot() +
+  geom_text(data = res_plot_summary[,median(V1),by=c("FILTER","GT")],
+            mapping = aes(x=FILTER,y= V1,label = V1, vjust = -0.5),position = position_dodge(0.9),show.legend = F,size = 3.5) +
+  ylab("Variants per sample") + scale_x_discrete(guide = guide_axis(n.dodge = 2)) + theme_bw()
+
+
+
+
+```

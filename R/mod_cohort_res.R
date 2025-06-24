@@ -27,7 +27,9 @@ mod_cohort_res_ui <- function(id) {
                  tags$h2("Cohort Gene Expression"),
                  selectizeInput(ns("select_phenotype"), "Choose Phenotype from PanelApp", choices = NULL, multiple = TRUE),
                  uiOutput(ns("select_gene")),
-                 uiOutput(ns("select_sample"))),
+                 uiOutput(ns("select_sample")),
+                 numericInput(ns("plot_number"), "Choose number of panels", value = 6, min = 1, max = 12, step = 1),
+                 actionButton(ns("display_results"), label = "Display Results", class = "btn btn-success")),
           column(8,
                  plotOutput(ns("gene_plot")),
                  fluidRow(
@@ -79,6 +81,32 @@ mod_cohort_res_server <- function(id, go_to_parameters, go_to_index, uploaded_da
       go_to_parameters()})
     mod_home_button_server("home_btn", go_to_index = go_to_index)
 
+    #reactive logic for action button
+    results_ready <- reactiveVal(FALSE)
+
+    observeEvent(input$display_results, {
+      req(all_selected_genes(), selected_sample())
+      results_ready(TRUE)
+    })
+
+    observeEvent(input$select_sample, {
+      results_ready(FALSE)
+    })
+
+    observeEvent(input$select_gene, {
+      results_ready(FALSE)
+    })
+
+    observeEvent(input$select_phenotype, {
+      results_ready(FALSE)
+    })
+
+    selected_sample <- reactive({
+      req(input$select_sample)
+      input$select_sample
+    })
+
+
     # Load PanelApp options drop-down
     ## Create a trigger that will ensure panelApp is loaded when module initialises
     update_trigger <- reactiveVal(Sys.time())
@@ -94,7 +122,7 @@ mod_cohort_res_server <- function(id, go_to_parameters, go_to_index, uploaded_da
 
     # Collect the genes from the chosen phenotype panel
     phenotype_genes <- reactive({
-      req(input$select_phenotype)
+      if (is.null(input$select_phenotype) || length(input$select_phenotype) == 0) return(character(0))
       unique(unlist(
         lapply(input$select_phenotype, function(panel_id) {
           get_genes_for_panel(panel_id, region = "uk")
@@ -131,12 +159,18 @@ mod_cohort_res_server <- function(id, go_to_parameters, go_to_index, uploaded_da
         )
     })
 
+    #Create reactive for selected gene
+    selected_gene <- reactive({
+      req(input$select_gene)
+      input$select_gene
+    })
+
     # Define pagination logic to display gene plots across multiple pages
 
     ## Create an object with all selected genes, including those selected manually and those pulled from PanelApp
     ## Filter to include only genes that are expressed
     all_selected_genes <- reactive({
-      genes1 <- input$select_gene
+      genes1 <- selected_gene()
       genes2 <- phenotype_genes()
       expressed <- expressed_genes()
 
@@ -147,19 +181,22 @@ mod_cohort_res_server <- function(id, go_to_parameters, go_to_index, uploaded_da
       combined <- union(genes1, genes2)
       valid <- intersect(combined, expressed)
       validate(
-        need(length(combined) > 0, "Please select at least one gene or phenotype panel.")
+        need(length(genes1) > 0 || length(genes2) > 0,
+             "Please select at least one gene or phenotype panel."),
+        need(length(valid) > 0, "None of the selected genes are expressed.")
       )
 
       valid
     })
+
     ## Define the number of plots (genes) to display per page
-    genes_per_page <- 6
+    genes_per_page <- reactive({ input$plot_number })
     page <- reactiveVal(1)
 
     ## Define the total number of pages
     total_pages <- reactive({
       genes <- all_selected_genes()
-      ceiling(length(genes) / genes_per_page)
+      ceiling(length(genes) / genes_per_page())
     })
 
     ## Reset page when gene list changes
@@ -177,9 +214,10 @@ mod_cohort_res_server <- function(id, go_to_parameters, go_to_index, uploaded_da
 
     ## Define pagination logic
     paged_genes <- reactive({
+      req(all_selected_genes())
       genes <- all_selected_genes()
-      start <- (page() - 1) * genes_per_page + 1
-      end <- min(page() * genes_per_page, length(genes))
+      start <- (page() - 1) * genes_per_page() + 1
+      end <- min(page() * genes_per_page(), length(genes))
       genes[start:end]
     })
 
@@ -191,7 +229,7 @@ mod_cohort_res_server <- function(id, go_to_parameters, go_to_index, uploaded_da
     ## Render gene plot
 
     output$gene_plot <- renderPlot({
-      req(processed_data$outrider, input$select_sample)
+      req(results_ready(), processed_data$outrider, input$select_sample)
       genes_to_plot <- paged_genes()
       req(length(genes_to_plot) > 0)
 
@@ -205,7 +243,7 @@ mod_cohort_res_server <- function(id, go_to_parameters, go_to_index, uploaded_da
     # Render datatables with fraser and outrider results filtered according to chosen genes
 
     output$fraser_res <- renderDT({
-      req(processed_data$annotated_results)
+      req(results_ready(), processed_data$annotated_results)
       util_nowrap_dt(
         filtered_annotated_table(processed_data$annotated_results$frares, all_selected_genes()),
         nowrap_columns = c("GO_TERMS", "Phenotypes")
@@ -213,7 +251,7 @@ mod_cohort_res_server <- function(id, go_to_parameters, go_to_index, uploaded_da
   })
 
     output$outrider_res <- renderDT({
-      req(processed_data$annotated_results)
+      req(results_ready(), processed_data$annotated_results)
       util_nowrap_dt(
         filtered_annotated_table(processed_data$annotated_results$outres, all_selected_genes()),
         nowrap_columns = c("GO_TERMS", "Phenotypes")
