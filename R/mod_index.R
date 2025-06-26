@@ -21,16 +21,16 @@ mod_index_ui <- function(id){
       tags$br(),
       tags$a(href = "quickstart.html", target = "_blank",
              class = "btn btn-secondary", style = "margin: 10px;",
-             "Quick-Start Guide"),
-      tags$a(href = "documentation.html", target = "_blank",
+             shiny::icon("play"), "Quick-Start Guide"),
+      tags$a(href = "https://docs.readthedocs.com/platform/latest/tutorial/index.html", target = "_blank",
              class = "btn btn-secondary", style = "margin: 10px;",
-             "Documentation"),
+             shiny::icon("book"), "Documentation"),
       tags$a(href = "https://github.com/ChiaraF32/rnawebapp", target = "_blank",
              class = "btn btn-secondary", style = "margin: 10px;",
-             "GitHub"),
+             shiny::icon("github"), "GitHub"),
       tags$a(href = "contact.html", target = "_blank",
              class = "btn btn-secondary", style = "margin: 10px;",
-             "Contact")
+             shiny::icon("phone"), "Contact")
     ),
 
     tags$hr(), # horizontal line separator

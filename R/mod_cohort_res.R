@@ -27,7 +27,7 @@ mod_cohort_res_ui <- function(id) {
                  tags$h2("Cohort Gene Expression"),
                  selectizeInput(ns("select_phenotype"), "Choose Phenotype from PanelApp", choices = NULL, multiple = TRUE),
                  uiOutput(ns("select_gene")),
-                 uiOutput(ns("select_sample")),
+                 mod_sample_selector_ui(ns("select_sample")),
                  numericInput(ns("plot_number"), "Choose number of panels", value = 6, min = 1, max = 12, step = 1),
                  mod_display_trigger_ui(ns("display_trigger"))),
           column(8,
@@ -76,6 +76,12 @@ mod_cohort_res_server <- function(id, go_to_parameters, go_to_index, uploaded_da
   moduleServer(id, function(input, output, session){
     ns <- session$ns
 
+    # sample selector server
+    selected_sample <- mod_sample_selector_server(
+      "select_sample",
+      samplesheet = reactive(uploaded_data$samplesheet)
+    )
+
     # Navigation (prev page, home page)
     observeEvent(input$return, {
       go_to_parameters()})
@@ -85,15 +91,9 @@ mod_cohort_res_server <- function(id, go_to_parameters, go_to_index, uploaded_da
     results_ready <- mod_display_trigger_server(
       "display_trigger",
       reset_when = reactive({
-        list(input$select_gene, input$select_sample, input$select_phenotype)
+        list(input$select_gene, selected_sample(), input$select_phenotype)
       })
     )
-
-    selected_sample <- reactive({
-      req(input$select_sample)
-      input$select_sample
-    })
-
 
     # Load PanelApp options drop-down
     ## Create a trigger that will ensure panelApp is loaded when module initialises
@@ -124,16 +124,6 @@ mod_cohort_res_server <- function(id, go_to_parameters, go_to_index, uploaded_da
       norm_counts <- SummarizedExperiment::assay(processed_data$outrider, normalized = TRUE)
       expressed <- rownames(norm_counts)[rowSums(norm_counts) > 0]
       expressed
-    })
-
-    # Update the select sample dropdown based on the samples in the samplesheet
-    output$select_sample <- renderUI({
-      req(uploaded_data$samplesheet)
-      selectInput(
-        ns("select_sample"),
-        "Choose Sample",
-        choices = uploaded_data$samplesheet$RNA_ID
-      )
     })
 
     # Update the gene selection dropdown based on the genes that are expressed
@@ -216,14 +206,14 @@ mod_cohort_res_server <- function(id, go_to_parameters, go_to_index, uploaded_da
     ## Render gene plot
 
     output$gene_plot <- renderPlot({
-      req(results_ready(), processed_data$outrider, input$select_sample)
+      req(results_ready(), processed_data$outrider, selected_sample())
       genes_to_plot <- paged_genes()
       req(length(genes_to_plot) > 0)
 
       plot_gene_expression_multi(
         ods = processed_data$outrider,
         genes = genes_to_plot,
-        sampleID = input$select_sample
+        sampleID = selected_sample()
       )
     })
 

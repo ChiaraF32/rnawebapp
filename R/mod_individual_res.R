@@ -21,10 +21,9 @@ mod_individual_res_ui <- function(id) {
           style = "text-align:left;",
           tags$h1("Individual Results"),
           column(6,
-                 uiOutput(ns("select_sample")),
-                 textOutput(ns("phenotype")),
+                 mod_sample_selector_ui(ns("select_sample")),
                  tags$br(),
-                 actionButton(ns("display_results"), label = "Display Results", class = "btn btn-success")),
+                 mod_display_trigger_ui(ns("display_trigger"))),
           column(6,
           tags$h2("Overlapping FRASER & OUTRIDER Results"),
           "Genes aberrantly expressed with ≥1 splice event",
@@ -55,7 +54,8 @@ mod_individual_res_ui <- function(id) {
                  tags$h2("FRASER Volcano Plot"),
                  selectInput(ns("fraser_metric"), "Choose Metric", choices = c("jaccard", "theta", "psi5", "psi3")),
                  plotOutput(ns("fraser_volcplot"))
-          )
+          ),
+          mod_export_excel_ui(ns("export_excel"))
         ),
 
         tags$hr(),
@@ -107,45 +107,24 @@ mod_individual_res_server <- function(id, go_to_parameters, go_to_index, uploade
   moduleServer(id, function(input, output, session){
     ns <- session$ns
 
+    # sample selector server
+    selected_sample <- mod_sample_selector_server(
+      "select_sample",
+      samplesheet = reactive(uploaded_data$samplesheet)
+    )
 
     # reactive logic for action button
-    results_ready <- reactiveVal(FALSE)
-
-    observeEvent(input$display_results, {
-      req(selected_sample())
-      results_ready(TRUE)
-    })
-
-    observeEvent(input$select_sample, {
-      results_ready(FALSE)
-    })
+    results_ready <- mod_display_trigger_server(
+      "display_trigger",
+      reset_when = reactive({
+        selected_sample()
+      })
+    )
 
     observeEvent(input$return, {
       go_to_parameters()})
 
     mod_home_button_server("home_btn", go_to_index = go_to_index)
-
-    selected_sample <- reactive({
-      req(input$select_sample)
-      input$select_sample
-    })
-
-    output$select_sample <- renderUI({
-      req(uploaded_data$samplesheet)
-      selectInput(
-        ns("select_sample"),
-        "Choose Sample",
-        choices = uploaded_data$samplesheet$RNA_ID,
-        selected = NULL
-      )
-    })
-
-
-    output$phenotype <- renderText({
-      req(uploaded_data$samplesheet, selected_sample())
-      sample_row <- uploaded_data$samplesheet[uploaded_data$samplesheet$RNA_ID == selected_sample(), ]
-      paste0("Phenotype: ", sample_row$PHENOTYPE)
-    })
 
     output$genes_overlap <- renderDT({
       req(results_ready(), processed_data$merged)
@@ -163,6 +142,21 @@ mod_individual_res_server <- function(id, go_to_parameters, go_to_index, uploade
       req(results_ready())
       selected_sample()
     }))
+
+
+    #server logic for excel download - OUTRIDER + FRASER
+    mod_export_excel_server(
+      id = "export_excel",
+      fraser_data = reactive({
+        req(results_ready(), processed_data$annotated_results)
+        filtered_annotated_table(processed_data$annotated_results$frares, selected_sample())
+      }),
+      outrider_data = reactive({
+        req(results_ready(), processed_data$annotated_results)
+        filtered_annotated_table(processed_data$annotated_results$outres, selected_sample())
+      }),
+      enabled = results_ready
+    )
 
     output$outrider_volcplot <- renderPlot({
       req(results_ready(), processed_data$outrider, selected_sample())
