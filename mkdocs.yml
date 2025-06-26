@@ -1,4 +1,4 @@
-site_name: "My Shiny Package Docs"
+site_name: "rnawebapp"
 nav:
   - Home: index.md
   - Installation: install.md
