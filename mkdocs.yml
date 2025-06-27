@@ -1,8 +1,8 @@
 site_name: "rnawebapp"
 nav:
   - Home: index.md
-  - Installation: install.md
+  - Installation: installation.md
+  - Prepare Inputs: prepare_inputs.md
   - Usage: usage.md
-  - API Reference: reference.md
 theme:
   name: readthedocs
