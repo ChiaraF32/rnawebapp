@@ -30,12 +30,7 @@ mod_process_ui <- function(id) {
             tags$br(),
             actionButton(ns("process_data"), "Process Data", class = "btn btn-success")
           )
-        )
-      ),
-
-      tags$hr(),
-
-      fluidRow(
+        ),
         column(
           width = 4,
           tags$div(
@@ -55,9 +50,14 @@ mod_process_ui <- function(id) {
             tags$br(),
             uiOutput(ns("complete_ui"))
           )
-        ),
+        )
+      ),
+
+      tags$hr(),
+
+      fluidRow(
         column(
-          width = 4,
+          width = 8,
           tags$div(
             style = "padding: 30px",
             tags$h2("Data Summary"),
@@ -72,6 +72,27 @@ mod_process_ui <- function(id) {
             plotOutput(ns("phenotype_plot"))
           )
         )
+      ),
+
+      tags$hr(),
+
+      fluidRow(
+        column(
+          width = 6,
+          tags$div(
+            style = "padding: 30px;",
+            tags$h2("Plot of Aberrently Expressed Genes per Sample"),
+            plotOutput(ns("outrider_outliers"))
+          )
+        ),
+        column(
+          width = 6,
+          tags$div(
+            style = "padding: 30px;",
+            tags$h2("Plot of Aberrently Spliced Genes per Sample"),
+            plotOutput(ns("fraser_outliers"))
+          )
+        )
       )
     )
   )
@@ -84,6 +105,8 @@ mod_process_ui <- function(id) {
 #' @importFrom shinipsum random_DT random_ggplot
 #' @importFrom DT renderDT
 #' @importFrom later later
+#' @importFrom OUTRIDER plotAberrantPerSample
+#' @importFrom FRASER plotAberrantPerSample
 mod_process_server <- function(id, go_to_parameters, go_to_upload, go_to_index, uploaded_data, processed_data, current_page) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
@@ -91,6 +114,8 @@ mod_process_server <- function(id, go_to_parameters, go_to_upload, go_to_index, 
     # Declare reactive values
     summary_table <- reactiveVal(data.frame())
     phenotype_chart <- reactiveVal()
+    outrider_outliers <- reactiveVal()
+    fraser_outliers <- reactiveVal()
     results <- reactiveVal(list())
     processing_state <- reactiveVal("start")  # start → samples_checked → genes_converted → bams_corrected → fraser_corrected → results_calculated → done
 
@@ -112,6 +137,8 @@ mod_process_server <- function(id, go_to_parameters, go_to_upload, go_to_index, 
 
           summary_table(summarise_data(outrider, fraser))
           phenotype_chart(plot_phenotype_distribution(samplesheet))
+          outrider_outliers(plotAberrantPerSample(outrider, padjCutoff=0.05))
+          fraser_outliers(plotAberrantPerSample(fraser, padjCutoff=0.05))
           processing_state("samples_checked")
         } else {
           shiny::showNotification("Missing input data!", type = "error")
@@ -186,6 +213,18 @@ mod_process_server <- function(id, go_to_parameters, go_to_upload, go_to_index, 
       req(processing_state() == "done")
       req(phenotype_chart())
       phenotype_chart()
+    })
+
+    output$outrider_outliers <- renderPlot({
+      req(processing_state() == "done")
+      req(outrider_outliers())
+      outrider_outliers()
+    })
+
+    output$fraser_outliers <- renderPlot({
+      req(processing_state() == "done")
+      req(fraser_outliers())
+      fraser_outliers()
     })
 
     # --- Observe uploaded_data and trigger steps ---

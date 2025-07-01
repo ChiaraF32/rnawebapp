@@ -171,8 +171,8 @@ update_bam_paths <- function(object, samplesheet) {
 #' @export
 #'
 #' @importFrom dplyr select rename transmute filter
-#' @importFrom OUTRIDER results
-#' @importFrom FRASER results
+#' @importFrom OUTRIDER results aberrant
+#' @importFrom FRASER results aberrant
 summarise_data <- function(ods, fds) {
   # Retrieve sample names
   ods_samples <- colnames(ods)
@@ -192,10 +192,6 @@ summarise_data <- function(ods, fds) {
     FRASER_outliers = as.integer(fds_aberrant[all_samples]),
     stringsAsFactors = FALSE
   )
-
-  # Replace NA with 0 (for samples not present in one of the datasets)
-  sample_status$OUTRIDER_aberrant[is.na(sample_status$OUTRIDER_aberrant)] <- 0
-  sample_status$FRASER_aberrant[is.na(sample_status$FRASER_aberrant)] <- 0
 
   return(sample_status)
 }
