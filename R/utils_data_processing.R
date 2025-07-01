@@ -155,12 +155,19 @@ update_bam_paths <- function(object, samplesheet) {
   return(object)
 }
 
-#' Generate a table summarising available data and samples
+#' Generate a summary table of aberrant genes detected per sample
 #'
-#' @param fds A FRASER dataset
-#' @param ods An OUTRIDER dataset
+#' This function returns a data frame summarizing the number of aberrant genes
+#' detected in each sample by the OUTRIDER and FRASER datasets.
+#' If a sample is not present in one of the datasets, it is assigned a count of 0.
 #'
-#' @return data.frame with which data is available for each sample
+#' @param ods An OUTRIDER dataset object.
+#' @param fds A FRASER dataset object.
+#'
+#' @return A data.frame with one row per sample and the number of aberrant genes
+#' detected by OUTRIDER (`OUTRIDER_outliers`) and FRASER (`FRASER_outliers`).
+#' Samples missing in a dataset will have 0 as their outlier count.
+#'
 #' @export
 #'
 #' @importFrom dplyr select rename transmute filter
@@ -171,16 +178,24 @@ summarise_data <- function(ods, fds) {
   ods_samples <- colnames(ods)
   fds_samples <- colnames(fds)
 
+  # Get number of aberrant genes per sample
+  ods_aberrant <- aberrant(ods, by = "sample")
+  fds_aberrant <- aberrant(fds, by = "sample")
+
   # Get list of all unique samples
   all_samples <- sort(unique(c(ods_samples, fds_samples)))
 
   # Merge into one data frame
   sample_status <- data.frame(
     sampleID = all_samples,
-    OUTRIDER = all_samples %in% ods_samples,
-    FRASER = all_samples %in% fds_samples,
+    OUTRIDER_outliers = as.integer(ods_aberrant[all_samples]),
+    FRASER_outliers = as.integer(fds_aberrant[all_samples]),
     stringsAsFactors = FALSE
   )
+
+  # Replace NA with 0 (for samples not present in one of the datasets)
+  sample_status$OUTRIDER_aberrant[is.na(sample_status$OUTRIDER_aberrant)] <- 0
+  sample_status$FRASER_aberrant[is.na(sample_status$FRASER_aberrant)] <- 0
 
   return(sample_status)
 }

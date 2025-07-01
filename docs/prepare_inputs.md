@@ -52,7 +52,7 @@ For example: `~/RNAwebapp/data/bams`
 > ⚠️ Sample IDs must match across all files.
 
 It is important that the sample IDs in the sample annotation match those in the OUTRIDER and FRASER datasets and the RNA VCFs.
-This can be confirmed by inspecting the column names of the ods.Rds and fds-object.Rds files:
+This can be confirmed by inspecting the column names of the `ods.Rds` and `fds-object.Rds` files:
 ```
 colnames(ods)
 colnames(fds)

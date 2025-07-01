@@ -22,7 +22,7 @@ Load datasets
 ```{r load-data, message=FALSE}
 samplesheet <- readr::read_tsv("./data/new/samplesheet_01.tsv", col_types = cols())
 ods <- readRDS("./data/new/ods.Rds")
-fds <- readRDS("./data/new/fds-object.RDS")
+fds <- loadFraserDataSet(dir = "./data/new/", name = "MUSCLE--v113")
 ```
 
 Define function to fix gene names in ods
@@ -79,49 +79,6 @@ ods_hgnc <- annotate_ensembl_ids(ods)
 
 ```
 
-Fix the FRASER results directory
-
-FRASER tracks a bunch of internal model outputs (psi3, psi5, zScore, theta, padjBetaBinomial_theta, etc.) in the fds object.
-If the `.fds` object was computed externally, the paths to the outputs will be wrongly specified. This needs to be corrected and follow a proper file hierarchy. 
-
-In particular, .h5 files must be in a nested `savedObjects/MUSCLE--v38` directory within the `workingDir`
-
-```{r fraser, message=FALSE}
-#' Fix the FRASER results directory
-#'
-#' @param fds A FRASER dataset 
-#' @param base_path The path to the directory containing the `.h5` objects (default: "./data/savedObjects/MUSCLE--v38/")
-#' @param working_dir The path to the working directory
-#' @return A modified object with appropriate h5 paths
-#' @export
-#'
-fixFdsH5Paths <- function(fds,
-                          base_path,
-                          working_dir = "./data/new",
-                          verbose = FALSE) {
-  fds@workingDir <- working_dir
-  
-  # Fix spliced assays
-  for (assay_name in names(fds@assays@data@listData)) {
-    h5_path <- file.path(base_path, paste0(assay_name, ".h5"))
-    fds@assays@data@listData[[assay_name]]@seed@seed@filepath <- h5_path
-    if (verbose) message("✔️ Spliced assay ", assay_name, ": ", h5_path)
-  }
-  
-  # Fix non-spliced assays
-  for (assay_name in names(fds@nonSplicedReads@assays@data@listData)) {
-    h5_path <- file.path(base_path, paste0(assay_name, ".h5"))
-    fds@nonSplicedReads@assays@data@listData[[assay_name]]@seed@seed@filepath <- h5_path
-    if (verbose) message("✔️ Non-spliced assay ", assay_name, ": ", h5_path)
-  }
-  
-  return(fds)
-}
-
-#fix the paths in the fds object
-fds <- fixFdsH5Paths(fds, "/Users/00104561/Library/CloudStorage/OneDrive-UWA/Research/Projects/AIM3_TRANSCRIPTOMICS/app/rnawebapp/data/new/savedObjects/MUSCLE--v113")
-
-```
 
 Generate and format results tables
 ```{R results, message=FALSE}
@@ -253,7 +210,32 @@ summarise_data <- function(ods, fds) {
 
 summarise_data(ods, fds)
 
-geneIDs <- unique(mcols(rowRanges(fds))$hgnc_symbol)
+summarise_data <- function(ods, fds) {
+  # Retrieve sample names
+  ods_samples <- colnames(ods)
+  fds_samples <- colnames(fds)
+  
+  # Get number of aberrant genes per sample
+  ods_aberrant <- aberrant(ods, by = "sample")
+  fds_aberrant <- aberrant(fds, by = "sample")
+  
+  # Get list of all unique samples
+  all_samples <- sort(unique(c(ods_samples, fds_samples)))
+  
+  # Merge into one data frame
+  sample_status <- data.frame(
+    sampleID = all_samples,
+    OUTRIDER_aberrant = as.integer(ods_aberrant[all_samples]),
+    FRASER_aberrant = as.integer(fds_aberrant[all_samples]),
+    stringsAsFactors = FALSE
+  )
+  
+  # Replace NA with 0 (for samples not present in one of the datasets)
+  sample_status$OUTRIDER_aberrant[is.na(sample_status$OUTRIDER_aberrant)] <- 0
+  sample_status$FRASER_aberrant[is.na(sample_status$FRASER_aberrant)] <- 0
+  
+  return(sample_status)
+}
 
 ```
 
@@ -403,3 +385,11 @@ merged<-merge_outrider_fraser(ores_annotated, fres_annotated)
 
 ```
 
+Calculate the number of OUTRIDER and FRASER outliers
+```{r outliers_total, message=FALSE}
+plotAberrantPerSample(fds, padjCutoff=0.05)
+median(sort(aberrant(ods, by="sample")))
+range(sort(aberrant(ods, by="sample")))
+aberrant(fds, by="sample")
+
+```
