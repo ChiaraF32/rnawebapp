@@ -33,8 +33,7 @@ If you are running DROP, the FRASER working directory will be `path_to_drop_work
 The FRASER analysis name is by default `{DROP_GROUP}--{ANNOTATION}`, where `DROP_GROUP`, i.e. "`MUSCLE`", and the "`ANNOTATION`"", i.e. "`113`" is the gene annotation version.
 These are specified in the original sample annotation provided as input into DROP.
 
-> ⚠ Use caution when transferring these objects from a remote server to a local server to use as input into the RNAwebapp and use the following rules:
-> ⚠️ Sample IDs must match across all files.
+> ⚠️ Use caution when transferring these objects from a remote server to a local server to use as input into the RNAwebapp and use the following rules:
 
 - The FRASER dataset (`fds-object.Rds`) should be in a sub-directory of your working data directory called `savedObjects/{DROUP_GROUP--{ANNOTATION}`
 - The should be accompanied by `.h5` objects in this same sub-directory.
