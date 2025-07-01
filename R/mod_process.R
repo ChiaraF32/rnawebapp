@@ -47,8 +47,6 @@ mod_process_ui <- function(id) {
             tags$br(),
             uiOutput(ns("fix_bam_paths_ui")),
             tags$br(),
-            uiOutput(ns("fix_fraser_paths_ui")),
-            tags$br(),
             uiOutput(ns("calculate_results_ui")),
             tags$br(),
             uiOutput(ns("annotate_results_ui")),
@@ -116,7 +114,7 @@ mod_process_server <- function(id, go_to_parameters, go_to_upload, go_to_index, 
           phenotype_chart(plot_phenotype_distribution(samplesheet))
           processing_state("samples_checked")
         } else {
-          showNotification("Missing input data!", type = "error")
+          shiny::showNotification("Missing input data!", type = "error")
         }
       }, delay = 0.1)
     })
@@ -126,7 +124,7 @@ mod_process_server <- function(id, go_to_parameters, go_to_upload, go_to_index, 
     output$check_samples_ui <- renderUI({
       render_step_ui(
         step_name = "Checking sample identifiers",
-        completed_states = c("samples_checked", "genes_converted", "bams_corrected", "fraser_corrected", "results_calculated", "results_annotated", "done"),
+        completed_states = c("samples_checked", "genes_converted", "bams_corrected", "results_calculated", "results_annotated", "done"),
         current_state = processing_state()
         )
       })
@@ -134,7 +132,7 @@ mod_process_server <- function(id, go_to_parameters, go_to_upload, go_to_index, 
     output$convert_genes_ui <- renderUI({
       render_step_ui(
         step_name = "Converting gene names",
-        completed_states = c("genes_converted", "bams_corrected", "fraser_corrected", "results_calculated", "results_annotated", "done"),
+        completed_states = c("genes_converted", "bams_corrected", "results_calculated", "results_annotated", "done"),
         current_state = processing_state()
       )
     })
@@ -142,15 +140,7 @@ mod_process_server <- function(id, go_to_parameters, go_to_upload, go_to_index, 
     output$fix_bam_paths_ui <- renderUI({
       render_step_ui(
         step_name = "Correcting BAM paths",
-        completed_states = c("bams_corrected", "fraser_corrected", "results_calculated", "results_annotated", "done"),
-        current_state = processing_state()
-      )
-    })
-
-    output$fix_fraser_paths_ui <- renderUI({
-      render_step_ui(
-        step_name = "Correcting FRASER paths",
-        completed_states = c("fraser_corrected", "results_calculated", "results_annotated", "done"),
+        completed_states = c("bams_corrected", "results_calculated", "results_annotated", "done"),
         current_state = processing_state()
       )
     })
@@ -246,33 +236,11 @@ mod_process_server <- function(id, go_to_parameters, go_to_upload, go_to_index, 
       }
     }, ignoreInit = TRUE)
 
-    ## change the fraser paths
-    observeEvent(processing_state(), {
-      req(processed_data$fraser)
-      if (processing_state() == "bams_corrected") {
-
-        fraser <- processed_data$fraser
-        fraser_dir <- uploaded_data$fraser_dir
-
-        later::later(function() {
-
-          # Fix paths to fraser objects
-          fds_fixed <- fixFdsH5Paths(fraser, base_path = fraser_dir)
-
-          # Save back to uploaded data
-          processed_data$fraser <- fds_fixed
-
-          # Update processing state
-          processing_state("fraser_corrected")
-        }, delay = 0.1)
-      }
-    }, ignoreInit = TRUE)
-
     ## calculate results
     observeEvent(processing_state(), {
       req(processed_data$outrider, processed_data$fraser)
       req(validate_padj(input$padj_out), validate_padj(input$padj_fra))
-      if (processing_state() == "fraser_corrected") {
+      if (processing_state() == "bams_corrected") {
 
         outrider <- processed_data$outrider
         fraser <- processed_data$fraser

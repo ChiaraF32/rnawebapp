@@ -19,10 +19,11 @@ mod_upload_ui <- function(id) {
 
       fileInput(ns("samplesheet"), "1. Upload Samplesheet"),
       fileInput(ns("outrider"), "2. Upload OUTRIDER Dataset"),
-      fileInput(ns("fraser"), "3. Upload FRASER Dataset"),
-      fileInput(ns("rna_vcf"), "4. Upload RNA Variant Calls"),
-      textInput(ns("fraser_dir"), "6. Specify Path to FRASER Datasets", placeholder = "./savedObjects/MUSCLE--v38/")
-      )
+      fileInput(ns("rna_vcf"), "3. Upload RNA Variant Calls"),
+      textInput(ns("fraser_dir"), "4. Specify Path to FRASER Working Directory", placeholder = "~/data/"),
+      textInput(ns("analysis_name"), "5. Specify Analysis Name of Project", placeholder = "MUSCLE--v113"),
+      actionButton(ns("load_fraser"), "6. Load FRASER Dataset", class = "btn btn-primary")
+    )
   )
 }
 
@@ -31,6 +32,7 @@ mod_upload_ui <- function(id) {
 #' @noRd
 #' @importFrom shiny observeEvent observe req showNotification
 #' @importFrom utils read.csv
+#' @importFrom FRASER loadFraserDataSet
 mod_upload_server <- function(id, go_to_processing, go_to_index, uploaded_data){
   moduleServer(id, function(input, output, session){
 
@@ -47,14 +49,9 @@ mod_upload_server <- function(id, go_to_processing, go_to_index, uploaded_data){
       uploaded_data$outrider <- readRDS(input$outrider$datapath)
     })
 
-    observeEvent(input$fraser, {
-      req(input$fraser)
-      uploaded_data$fraser <- readRDS(input$fraser$datapath)
-    })
-
     observeEvent(input$fraser_dir, {
-      req(input$fraser_dir)
-      uploaded_data$fraser_dir <- input$fraser_dir
+      req(input$fraser_dir, input$analysis_name)
+      uploaded_data$fraser <- loadFraserDataSet(dir = input$fraser_dir, name = input$analysis_name)
     })
 
     observeEvent(input$rna_vcf, {
@@ -73,9 +70,14 @@ mod_upload_server <- function(id, go_to_processing, go_to_index, uploaded_data){
       message("OUTRIDER uploaded: ", input$outrider$name)
     })
 
-    observe({
-      req(input$fraser)
-      message("FRASER uploaded: ", input$fraser$name)
+    observeEvent(input$load_fraser, {
+      req(input$fraser_dir, input$analysis_name)
+      tryCatch({
+        uploaded_data$fraser <- loadFraserDataSet(dir = input$fraser_dir, name = input$analysis_name)
+        shiny::showNotification("✅ FRASER dataset loaded", type = "message")
+      }, error = function(e) {
+        shiny::showNotification(paste("❌ Failed to load FRASER dataset:", e$message), type = "error")
+      })
     })
   })
 }
