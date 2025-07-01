@@ -15,8 +15,11 @@ In the **Upload** tab, you must provide:
   - OUTRIDER dataset
   - FRASER dataset
   - RNA variant calls (VCF)
+- If the FRASER dataset is uploaded, you must specify the full path to the location of the additional FRASER datasets.
+E.g. `~/data/RNAseq/savedObjects/MUSCLE--v113/`
 
-Once the data is uploded, click the **Data Processing** to process the uploaded data. 
+
+Once the data is uploaded, click the **Data Processing** to process the uploaded data. 
 
 ---
 

@@ -20,7 +20,7 @@ mod_upload_ui <- function(id) {
       fileInput(ns("samplesheet"), "1. Upload Samplesheet"),
       fileInput(ns("outrider"), "2. Upload OUTRIDER Dataset"),
       fileInput(ns("rna_vcf"), "3. Upload RNA Variant Calls"),
-      textInput(ns("fraser_dir"), "4. Specify Path to FRASER Working Directory", placeholder = "~/data/"),
+      textInput(ns("fraser_dir"), "4. Specify Path to FRASER Working Directory", placeholder = "~/RNAwebapp/data/"),
       textInput(ns("analysis_name"), "5. Specify Analysis Name of Project", placeholder = "MUSCLE--v113"),
       actionButton(ns("load_fraser"), "6. Load FRASER Dataset", class = "btn btn-primary")
     )
