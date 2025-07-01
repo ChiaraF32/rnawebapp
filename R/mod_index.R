@@ -22,7 +22,7 @@ mod_index_ui <- function(id){
       tags$a(href = "quickstart.html", target = "_blank",
              class = "btn btn-secondary", style = "margin: 10px;",
              shiny::icon("play"), "Quick-Start Guide"),
-      tags$a(href = "https://docs.readthedocs.com/platform/latest/tutorial/index.html", target = "_blank",
+      tags$a(href = "https://rnawebapp.readthedocs.io/en/latest/", target = "_blank",
              class = "btn btn-secondary", style = "margin: 10px;",
              shiny::icon("book"), "Documentation"),
       tags$a(href = "https://github.com/ChiaraF32/rnawebapp", target = "_blank",
