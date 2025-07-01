@@ -44,37 +44,6 @@ annotate_ensembl_ids <- function(se, annotation = annotables::grch38) {
   return(se)
 }
 
-#' Fix the FRASER results directory
-#'
-#' @param fds A FRASER dataset
-#' @param base_path The path to the directory containing the `.h5` objects (default: "./data/savedObjects/MUSCLE--v38/")
-#' @param working_dir The path to the working directory
-#' @return A modified object with appropriate h5 paths
-#' @export
-#'
-fixFdsH5Paths <- function(fds,
-                          base_path,
-                          working_dir = "./data/new",
-                          verbose = FALSE) {
-  fds@workingDir <- working_dir
-
-  # Fix spliced assays
-  for (assay_name in names(fds@assays@data@listData)) {
-    h5_path <- file.path(base_path, paste0(assay_name, ".h5"))
-    fds@assays@data@listData[[assay_name]]@seed@seed@filepath <- h5_path
-    if (verbose) message("✔️ Spliced assay ", assay_name, ": ", h5_path)
-  }
-
-  # Fix non-spliced assays
-  for (assay_name in names(fds@nonSplicedReads@assays@data@listData)) {
-    h5_path <- file.path(base_path, paste0(assay_name, ".h5"))
-    fds@nonSplicedReads@assays@data@listData[[assay_name]]@seed@seed@filepath <- h5_path
-    if (verbose) message("✔️ Non-spliced assay ", assay_name, ": ", h5_path)
-  }
-
-  return(fds)
-}
-
 #' Generate OUTRIDER and FRASER results with optional padjust filtering
 #'
 #' @param ods An OUTRIDER dataset (ODS)
