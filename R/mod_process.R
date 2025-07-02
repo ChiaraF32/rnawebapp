@@ -57,15 +57,15 @@ mod_process_ui <- function(id) {
 
       fluidRow(
         column(
-          width = 8,
+          width = 6,
           tags$div(
             style = "padding: 30px",
-            tags$h2("Data Summary"),
+            tags$h2("Sample Summary"),
             DTOutput(ns("data_summary"))
           )
         ),
         column(
-          width = 4,
+          width = 6,
           tags$div(
             style = "padding: 30px",
             tags$h2("Phenotype"),
@@ -81,7 +81,7 @@ mod_process_ui <- function(id) {
           width = 6,
           tags$div(
             style = "padding: 30px;",
-            tags$h2("Plot of Aberrently Expressed Genes per Sample"),
+            tags$h2("Aberrantly Expressed Genes per Sample"),
             plotOutput(ns("outrider_outliers"))
           )
         ),
@@ -89,7 +89,7 @@ mod_process_ui <- function(id) {
           width = 6,
           tags$div(
             style = "padding: 30px;",
-            tags$h2("Plot of Aberrently Spliced Genes per Sample"),
+            tags$h2("Aberrantly Spliced Genes per Sample"),
             plotOutput(ns("fraser_outliers"))
           )
         )

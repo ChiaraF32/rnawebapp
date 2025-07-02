@@ -25,6 +25,56 @@ ods <- readRDS("./data/new/ods.Rds")
 fds <- loadFraserDataSet(dir = "./data/new/", name = "MUSCLE--v113")
 ```
 
+```{r check-samples, message = FALSE}
+#' Compare sample IDs between OUTRIDER and FRASER datasets
+#'
+#' @param ods An OUTRIDER dataset object
+#' @param fds A FRASER dataset object
+#'
+#' @return Invisibly returns a list with sample counts and mismatches; also prints summary to console
+#' @export
+compare_samples <- function(ods, fds) {
+  # Extract sample IDs
+  ods_samples <- colnames(ods)
+  fds_samples <- colnames(fds)
+  
+  # Calculate counts
+  n_ods <- length(ods_samples)
+  n_fds <- length(fds_samples)
+  
+  # Identify mismatches
+  only_in_ods <- setdiff(ods_samples, fds_samples)
+  only_in_fds <- setdiff(fds_samples, ods_samples)
+  
+  # Print summary
+  cat("Sample count in OUTRIDER (ods):", n_ods, "\n")
+  cat("Sample count in FRASER (fds):", n_fds, "\n")
+  
+  if (length(only_in_ods) > 0) {
+    cat("\nSamples only in OUTRIDER (ods):\n")
+    print(only_in_ods)
+  } else {
+    cat("\nAll OUTRIDER samples are present in FRASER.\n")
+  }
+  
+  if (length(only_in_fds) > 0) {
+    cat("\nSamples only in FRASER (fds):\n")
+    print(only_in_fds)
+  } else {
+    cat("\nAll FRASER samples are present in OUTRIDER.\n")
+  }
+
+  # Return details invisibly
+  invisible(list(
+    n_ods = n_ods,
+    n_fds = n_fds,
+    only_in_ods = only_in_ods,
+    only_in_fds = only_in_fds
+  ))
+}
+
+```
+
 Define function to fix gene names in ods
 
 ```{r fix-names, message=FALSE}

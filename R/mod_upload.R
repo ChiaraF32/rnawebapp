@@ -15,14 +15,30 @@ mod_upload_ui <- function(id) {
       nav_id = ns("nav_buttons"),
       home_id = ns("home_btn"),
 
-      tags$h2("Upload Your Data"),
-
-      fileInput(ns("samplesheet"), "1. Upload Samplesheet"),
-      fileInput(ns("outrider"), "2. Upload OUTRIDER Dataset"),
-      fileInput(ns("rna_vcf"), "3. Upload RNA Variant Calls"),
-      textInput(ns("fraser_dir"), "4. Specify Path to FRASER Working Directory", placeholder = "~/RNAwebapp/data/"),
-      textInput(ns("analysis_name"), "5. Specify Analysis Name of Project", placeholder = "MUSCLE--v113"),
-      actionButton(ns("load_fraser"), "6. Load FRASER Dataset", class = "btn btn-primary")
+      fluidRow(
+        column(
+          width = 6,
+          tags$div(
+            style = "text-align:left; padding: 30px;",
+            tags$h2("Upload Data"),
+            fileInput(ns("samplesheet"), "Upload Samplesheet", accept = c(".csv", ".tsv")),
+            fileInput(ns("outrider"), "Upload OUTRIDER Dataset", accept = ".Rds"),
+            fileInput(ns("rna_vcf"), "Upload RNA Variant Calls", accept = c(".Rds", ".vcf")),
+            textInput(ns("fraser_dir"), "Specify Path to FRASER Working Directory", placeholder = "~/RNAwebapp/data/"),
+            textInput(ns("analysis_name"), "Specify Analysis Name of Project", placeholder = "MUSCLE--v113"),
+            actionButton(ns("load_fraser"), "Load FRASER Dataset", class = "btn btn-primary")
+          )
+        ),
+        column(
+          width = 6,
+          tags$div(
+            style = "text-align:left; padding: 30px;",
+            tags$h2("Check Samples"),
+            actionButton(ns("check_samples_btn"), "Check for sample mismatches", class = "btn btn-primary"),
+            uiOutput(ns("check_samples"))
+          )
+        )
+      )
     )
   )
 }
@@ -47,11 +63,6 @@ mod_upload_server <- function(id, go_to_processing, go_to_index, uploaded_data){
     observeEvent(input$outrider, {
       req(input$outrider)
       uploaded_data$outrider <- readRDS(input$outrider$datapath)
-    })
-
-    observeEvent(input$fraser_dir, {
-      req(input$fraser_dir, input$analysis_name)
-      uploaded_data$fraser <- loadFraserDataSet(dir = input$fraser_dir, name = input$analysis_name)
     })
 
     observeEvent(input$rna_vcf, {
@@ -79,6 +90,16 @@ mod_upload_server <- function(id, go_to_processing, go_to_index, uploaded_data){
         shiny::showNotification(paste("❌ Failed to load FRASER dataset:", e$message), type = "error")
       })
     })
+
+    observeEvent(input$check_samples_btn, {
+      req(input$samplesheet, uploaded_data$outrider, uploaded_data$fraser)
+      output$check_samples <- renderUI({
+          ods<- uploaded_data$outrider
+          fds <- uploaded_data$fraser
+          compare_samples(ods, fds)
+        })
+      }
+    )
   })
 }
 

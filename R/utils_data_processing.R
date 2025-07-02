@@ -303,7 +303,7 @@ plot_phenotype_distribution <- function(samplesheet) {
     ))
   }
 
-  ggplot(samplesheet, aes(x = PHENOTYPE)) +
+  ggplot(samplesheet, aes(x = reorder(PHENOTYPE, PHENOTYPE, function(x) -length(x)))) +
     geom_bar(fill = "steelblue") +
     theme_minimal() +
     theme(
@@ -312,7 +312,6 @@ plot_phenotype_distribution <- function(samplesheet) {
       axis.title = element_text(size = 13)
     ) +
     labs(
-      title = "",
       x = "Phenotype",
       y = "Count"
     )
@@ -350,7 +349,69 @@ merge_outrider_fraser <- function(ores, frares) {
   return(collapsed)
 }
 
+#' Compare sample IDs between OUTRIDER and FRASER datasets (UI version)
+#'
+#' @param ods OUTRIDER dataset object
+#' @param fds FRASER dataset object
+#'
+#' @return A tagList containing summary and mismatches (for use in renderUI)
+#' @export
+#'
+compare_samples <- function(ods, fds) {
+  # Extract sample IDs
+  ods_samples <- colnames(ods)
+  fds_samples <- colnames(fds)
+
+  # Calculate counts
+  n_ods <- length(ods_samples)
+  n_fds <- length(fds_samples)
+
+  # Identify mismatches
+  only_in_ods <- setdiff(ods_samples, fds_samples)
+  only_in_fds <- setdiff(fds_samples, ods_samples)
+
+  # Build UI output
+  output_ui <- tagList(
+    tags$br(),
+    tags$p(paste("Sample count in OUTRIDER (ods):", n_ods)),
+    tags$p(paste("Sample count in FRASER (fds):", n_fds))
+  )
+
+  if (length(only_in_ods) == 0 && length(only_in_fds) == 0) {
+    output_ui <- tagAppendChildren(
+      output_ui,
+      tags$br(),
+      tags$p("✅ All sample IDs match between OUTRIDER and FRASER.")
+    )
+  } else {
+    if (length(only_in_ods) > 0) {
+      output_ui <- tagAppendChildren(
+        output_ui,
+        tags$br(),
+        tags$div(
+          tags$strong("Samples only in OUTRIDER:"),
+          tags$ul(lapply(only_in_ods, tags$li))
+        )
+      )
+    }
+    if (length(only_in_fds) > 0) {
+      output_ui <- tagAppendChildren(
+        output_ui,
+        tags$br(),
+        tags$div(
+          tags$strong("Samples only in FRASER:"),
+          tags$ul(lapply(only_in_fds, tags$li))
+        )
+      )
+    }
+  }
+
+  return(output_ui)
+}
 
 validate_padj <- function(val) {
   isTRUE(suppressWarnings(!is.na(as.numeric(val)) & as.numeric(val) >= 0 & as.numeric(val) <= 1))
 }
+
+
+
