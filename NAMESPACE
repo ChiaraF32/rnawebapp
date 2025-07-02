@@ -3,6 +3,7 @@
 export(annotate_ensembl_ids)
 export(annotate_results_with_omim_go)
 export(compare_samples)
+export(filter_samplesheet)
 export(filtered_VC)
 export(filtered_annotated_table)
 export(generate_results)

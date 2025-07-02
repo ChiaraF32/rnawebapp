@@ -35,7 +35,9 @@ mod_upload_ui <- function(id) {
             style = "text-align:left; padding: 30px;",
             tags$h2("Check Samples"),
             actionButton(ns("check_samples_btn"), "Check for sample mismatches", class = "btn btn-primary"),
-            uiOutput(ns("check_samples"))
+            uiOutput(ns("check_samples")),
+            tags$br(),
+            uiOutput(ns("filter_button_ui"))
           )
         )
       )
@@ -46,11 +48,13 @@ mod_upload_ui <- function(id) {
 #' upload Server Functions
 #'
 #' @noRd
-#' @importFrom shiny observeEvent observe req showNotification
+#' @importFrom shiny observeEvent observe req showNotification NS
 #' @importFrom utils read.csv
 #' @importFrom FRASER loadFraserDataSet
 mod_upload_server <- function(id, go_to_processing, go_to_index, uploaded_data){
   moduleServer(id, function(input, output, session){
+
+    ns <- session$ns
 
     mod_nav_buttons_server("nav_buttons", next_page = go_to_processing, previous_page = go_to_index)
     mod_home_button_server("home_btn", go_to_index = go_to_index)
@@ -92,14 +96,31 @@ mod_upload_server <- function(id, go_to_processing, go_to_index, uploaded_data){
     })
 
     observeEvent(input$check_samples_btn, {
-      req(input$samplesheet, uploaded_data$outrider, uploaded_data$fraser)
+      req(uploaded_data$samplesheet, uploaded_data$outrider, uploaded_data$fraser)
+
+      comparison <- compare_samples(uploaded_data$outrider, uploaded_data$fraser, uploaded_data$samplesheet)
+
+      # Render mismatch report
       output$check_samples <- renderUI({
-          ods<- uploaded_data$outrider
-          fds <- uploaded_data$fraser
-          compare_samples(ods, fds)
-        })
-      }
-    )
+        comparison$output_ui
+      })
+        # Conditionally show filter button
+      output$filter_button_ui <- renderUI({
+        if (comparison$render_button) {
+          actionButton(ns("filter_samplesheet_btn"), "Filter samplesheet to matched samples", class = "btn btn-warning")
+        }
+      })
+    })
+
+    observeEvent(input$filter_samplesheet_btn, {
+      updated <- filter_samplesheet(
+        samplesheet = uploaded_data$samplesheet,
+        ods = uploaded_data$outrider,
+        fds = uploaded_data$fraser
+      )
+      uploaded_data$samplesheet <- updated
+      showNotification("✅ Samplesheet filtered to matched samples.", type = "message")
+    })
   })
 }
 

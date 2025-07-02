@@ -357,31 +357,38 @@ merge_outrider_fraser <- function(ores, frares) {
 #' @return A tagList containing summary and mismatches (for use in renderUI)
 #' @export
 #'
-compare_samples <- function(ods, fds) {
+compare_samples <- function(ods, fds, samplesheet) {
   # Extract sample IDs
   ods_samples <- colnames(ods)
   fds_samples <- colnames(fds)
+  samples <- samplesheet$RNA_ID
+  ods_fds_samples <- sort(unique(c(ods_samples, fds_samples)))
 
   # Calculate counts
   n_ods <- length(ods_samples)
   n_fds <- length(fds_samples)
+  n_samplesheet <- nrow(samplesheet)
 
   # Identify mismatches
   only_in_ods <- setdiff(ods_samples, fds_samples)
   only_in_fds <- setdiff(fds_samples, ods_samples)
+  only_in_samplesheet <- setdiff(samples, ods_fds_samples)
+
+  render_button <- (length(only_in_samplesheet) > 0)
 
   # Build UI output
   output_ui <- tagList(
     tags$br(),
-    tags$p(paste("Sample count in OUTRIDER (ods):", n_ods)),
-    tags$p(paste("Sample count in FRASER (fds):", n_fds))
+    tags$p(paste("Samples in OUTRIDER dataset (ods):", n_ods)),
+    tags$p(paste("Samples in FRASER dataset (fds):", n_fds)),
+    tags$p(paste("Sample count in samplesheet:", n_samplesheet))
   )
 
-  if (length(only_in_ods) == 0 && length(only_in_fds) == 0) {
+  if (length(only_in_ods) == 0 && length(only_in_fds) == 0 && length(only_in_samplesheet) == 0) {
     output_ui <- tagAppendChildren(
       output_ui,
       tags$br(),
-      tags$p("✅ All sample IDs match between OUTRIDER and FRASER.")
+      tags$p("✅ All sample IDs match across OUTRIDER, FRASER, and the samplesheet.")
     )
   } else {
     if (length(only_in_ods) > 0) {
@@ -404,9 +411,48 @@ compare_samples <- function(ods, fds) {
         )
       )
     }
+    if (length(only_in_samplesheet) > 0) {
+      output_ui <- tagAppendChildren(
+        output_ui,
+        tags$br(),
+        tags$div(
+          tags$strong("Samples in samplesheet not in either FRASER or OUTRIDER:"),
+          tags$ul(lapply(only_in_samplesheet, tags$li))
+        )
+      )
+    }
   }
 
-  return(output_ui)
+  return(list(
+    output_ui = output_ui,
+    render_button = render_button
+  ))
+}
+
+#' Filter samplesheet to include only samples found in OUTRIDER or FRASER datasets
+#'
+#' @param samplesheet A data.frame containing a `RNA_ID` column
+#' @param ods OUTRIDER dataset object
+#' @param fds FRASER dataset object
+#'
+#' @return Filtered samplesheet including only samples present in either ods or fds
+#' @export
+filter_samplesheet <- function(samplesheet, ods, fds) {
+  if (!"RNA_ID" %in% colnames(samplesheet)) {
+    stop("The samplesheet must contain an 'RNA_ID' column.")
+  }
+
+  # Get sample names
+  ods_samples <- colnames(ods)
+  fds_samples <- colnames(fds)
+
+  # Combine all valid sample IDs
+  valid_samples <- union(ods_samples, fds_samples)
+
+  # Filter samplesheet
+  filtered <- samplesheet[samplesheet$RNA_ID %in% valid_samples, ]
+
+  return(filtered)
 }
 
 validate_padj <- function(val) {

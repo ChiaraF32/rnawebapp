@@ -36,7 +36,7 @@ mod_process_ui <- function(id) {
           tags$div(
             style = "text-align:left; padding: 30px;",
             tags$h2("Data Processing Progress"),
-            uiOutput(ns("check_samples_ui")),
+            uiOutput(ns("initialise_ui")),
             tags$br(),
             uiOutput(ns("convert_genes_ui")),
             tags$br(),
@@ -117,7 +117,7 @@ mod_process_server <- function(id, go_to_parameters, go_to_upload, go_to_index, 
     outrider_outliers <- reactiveVal()
     fraser_outliers <- reactiveVal()
     results <- reactiveVal(list())
-    processing_state <- reactiveVal("start")  # start → samples_checked → genes_converted → bams_corrected → fraser_corrected → results_calculated → done
+    processing_state <- reactiveVal("start")  # start → initialise → genes_converted → bams_corrected → fraser_corrected → results_calculated → done
 
     #Buttons
     mod_nav_buttons_server("nav_buttons", next_page = go_to_parameters, previous_page = go_to_upload)
@@ -139,7 +139,7 @@ mod_process_server <- function(id, go_to_parameters, go_to_upload, go_to_index, 
           phenotype_chart(plot_phenotype_distribution(samplesheet))
           outrider_outliers(plotAberrantPerSample(outrider, padjCutoff=0.05))
           fraser_outliers(plotAberrantPerSample(fraser, padjCutoff=0.05))
-          processing_state("samples_checked")
+          processing_state("initialise")
         } else {
           shiny::showNotification("Missing input data!", type = "error")
         }
@@ -148,10 +148,10 @@ mod_process_server <- function(id, go_to_parameters, go_to_upload, go_to_index, 
 
 
     # --- Progress UI Renderer ---
-    output$check_samples_ui <- renderUI({
+    output$initialise_ui <- renderUI({
       render_step_ui(
-        step_name = "Checking sample identifiers",
-        completed_states = c("samples_checked", "genes_converted", "bams_corrected", "results_calculated", "results_annotated", "done"),
+        step_name = "Initialising data processing",
+        completed_states = c("initialise", "genes_converted", "bams_corrected", "results_calculated", "results_annotated", "done"),
         current_state = processing_state()
         )
       })
@@ -232,7 +232,7 @@ mod_process_server <- function(id, go_to_parameters, go_to_upload, go_to_index, 
     ## change ensembl id to hgnc for outrider
     observeEvent(processing_state(), {
       req(uploaded_data$outrider, uploaded_data$fraser)
-      if (processing_state() == "samples_checked") {
+      if (processing_state() == "initialise") {
 
         outrider <- uploaded_data$outrider
 
@@ -296,6 +296,7 @@ mod_process_server <- function(id, go_to_parameters, go_to_upload, go_to_index, 
       }
     }, ignoreInit = TRUE)
 
+    # annotate results
     observeEvent(processing_state(), {
       if (processing_state() == "results_calculated") {
 
@@ -325,6 +326,7 @@ mod_process_server <- function(id, go_to_parameters, go_to_upload, go_to_index, 
       }
     }, ignoreInit = TRUE)
 
+    #create merged outrider and fraser dataset
     observeEvent(processing_state(), {
       if (processing_state() == "results_annotated") {
 

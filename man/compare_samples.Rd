@@ -4,7 +4,7 @@
 \alias{compare_samples}
 \title{Compare sample IDs between OUTRIDER and FRASER datasets (UI version)}
 \usage{
-compare_samples(ods, fds)
+compare_samples(ods, fds, samplesheet)
 }
 \arguments{
 \item{ods}{OUTRIDER dataset object}
