@@ -20,9 +20,9 @@ library(readr)
 Load datasets
 
 ```{r load-data, message=FALSE}
-samplesheet <- readr::read_tsv("./data/new/samplesheet_01.tsv", col_types = cols())
-ods <- readRDS("./data/new/ods.Rds")
-fds <- loadFraserDataSet(dir = "./data/new/", name = "MUSCLE--v113")
+samplesheet <- readr::read_tsv("./data/fibro/samplesheet.tsv", col_types = cols())
+ods <- readRDS("./data/fibro/ods.Rds")
+fds <- loadFraserDataSet(dir = "./data/fibro/", name = "FIBRO--v29")
 ```
 
 ```{r check-samples, message = FALSE}
@@ -206,44 +206,38 @@ Fix paths to BAM files
 #' @export
 #'
 #' @import Rsamtools
-update_bam_paths <- function(object, new_base_path) {
-  if (!dir.exists(new_base_path)) {
-    stop("❌ Provided base path does not exist: ", new_base_path)
-  }
-
-  if (!"RNA_BAM_FILE" %in% colnames(colData(object))) {
-    stop("❌ Input object does not contain a 'RNA_BAM_FILE' column in colData.")
-  }
-
-  # Update BAM paths
-  updated_bam_paths <- file.path(new_base_path, basename(colData(object)$RNA_BAM_FILE))
-  colData(object)$RNA_BAM_FILE <- updated_bam_paths
-  colData(object)$bamFile <- Rsamtools::BamFileList(updated_bam_paths)
-
-  return(object)
-}
-
 update_bam_paths <- function(object, samplesheet) {
-  # Step 1: Extract the base filenames from both vectors
+  # Extract base filenames
   object_files <- basename(colData(object)$RNA_BAM_FILE)
   samplesheet_files <- basename(samplesheet$RNA_BAM_FILE)
 
-  # Step 2: Identify which files in samplesheet match ods by filename
-  matches <- samplesheet_files %in% ods_files
+  # Match filenames
+  matched_indices <- match(object_files, samplesheet_files)
 
-  # Step 3: Subset the full paths from samplesheet using the match
-  matched_paths <- samplesheet$RNA_BAM_FILE[matches]
-  
-  # Step 4: change the filepaths
-  colData(object)$RNA_BAM_FILE <- matched_paths
-  colData(object)$bamFile <- Rsamtools::BamFileList(matched_paths)
+  # Identify unmatched BAMs
+  unmatched_bams <- object_files[is.na(matched_indices)]
 
+  if (length(unmatched_bams) > 0) {
+    warning("Some BAM files in the object could not be matched to the samplesheet and will be left unchanged.")
+  }
+
+  # Get the current BAM paths
+  current_paths <- colData(object)$RNA_BAM_FILE
+
+  # Only update the matched entries
+  matched <- !is.na(matched_indices)
+  current_paths[matched] <- samplesheet$RNA_BAM_FILE[matched_indices[matched]]
+
+  # Write updated paths back
+  SummarizedExperiment::colData(object)$RNA_BAM_FILE <- current_paths
+  SummarizedExperiment::colData(object)$bamFile <- Rsamtools::BamFileList(current_paths)
+
+  # Return both the updated object and the unmatched BAM files
   return(object)
 }
 
 # Define the new base path
 ods <- update_bam_paths(ods, samplesheet)
-fds <- update_bam_paths(fds, new_base_path)
 
 ```
 

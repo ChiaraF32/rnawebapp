@@ -1,3 +1,15 @@
+#' Extract genes expressed in OUTRIDER dataset
+#'
+#' @param ods The OUTRIDER dataset
+#'
+#' @return An object containing the genes expressed in in the dataset
+#'
+#' @importFrom SummarizedExperiment assay
+filtered_expression_genes <- function(ods) {
+  norm_counts <- assay(ods, normalized = TRUE)
+  genes <- sort(rownames(norm_counts)[rowSums(norm_counts) > 0])
+  return(genes)
+}
 
 #' Annotate Ensembl IDs with HGNC symbols
 #'
@@ -143,15 +155,25 @@ update_bam_paths <- function(object, samplesheet) {
   # Match filenames
   matched_indices <- match(object_files, samplesheet_files)
 
-  if (any(is.na(matched_indices))) {
-    warning("Some BAM files in the object could not be matched to the samplesheet and will be set to NA.")
+  # Identify unmatched BAMs
+  unmatched_bams <- object_files[is.na(matched_indices)]
+
+  if (length(unmatched_bams) > 0) {
+    warning("Some BAM files in the object could not be matched to the samplesheet and will be left unchanged.")
   }
 
-  # Assign full paths where matched
-  new_paths <- samplesheet$RNA_BAM_FILE[matched_indices]
-  SummarizedExperiment::colData(object)$RNA_BAM_FILE <- new_paths
-  SummarizedExperiment::colData(object)$bamFile <- Rsamtools::BamFileList(new_paths)
+  # Get the current BAM paths
+  current_paths <- colData(object)$RNA_BAM_FILE
 
+  # Only update the matched entries
+  matched <- !is.na(matched_indices)
+  current_paths[matched] <- samplesheet$RNA_BAM_FILE[matched_indices[matched]]
+
+  # Write updated paths back
+  SummarizedExperiment::colData(object)$RNA_BAM_FILE <- current_paths
+  SummarizedExperiment::colData(object)$bamFile <- Rsamtools::BamFileList(current_paths)
+
+  # Return both the updated object and the unmatched BAM files
   return(object)
 }
 

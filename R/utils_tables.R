@@ -1,3 +1,4 @@
+# These util functions are used for filtering data and/or rendering data as tables in the shiny UI
 #' Filter Annotated Results Table by Gene and/or Sample
 #'
 #' Filters an annotated results data frame (e.g., from OUTRIDER or FRASER)
@@ -21,6 +22,7 @@
 #' filtered_annotated_table(results_tbl, genes = "MYH1", samples = "IVCT-43Y-M")
 #'
 #' @export
+#' @importFrom dplyr filter
 filtered_annotated_table <- function(results_tbl, genes = NULL, samples = NULL) {
   filtered <- results_tbl
 
@@ -36,12 +38,12 @@ filtered_annotated_table <- function(results_tbl, genes = NULL, samples = NULL) 
 }
 
 
-#' Render a Gene-Level Results Table with Fixed Columns
+#' Render a Sample-Level Results Table with Fixed Columns
 #'
-#' Renders a `DT::datatable` for annotated gene-level results (e.g., OUTRIDER or FRASER)
+#' Renders a `DT::datatable` for annotated sample results (e.g., OUTRIDER or FRASER)
 #' with selected columns wrapped for display.
 #'
-#' @param data_type A `data.frame` or `tibble` containing gene-level results with annotation.
+#' @param data_type A `data.frame` or `tibble` containing annotated results.
 #'        Must contain `GO_TERMS` and `Phenotypes` columns.
 #'
 #' @return A Shiny render function that outputs a `DT::datatable`.
@@ -56,6 +58,85 @@ render_gene_table <- function(data_type, sample_id) {
     util_nowrap_dt(filtered, nowrap_columns = c("GO_TERMS", "Phenotypes"))
   })
 }
+
+#' Utility to create a DT::datatable with truncated long-text columns
+#'
+#' @param data A data.frame to display
+#' @param truncate_columns A character vector of column names to truncate
+#' @param max_width Max width in pixels for truncated columns (default: 300)
+#'
+#' @return A DT::datatable object
+#' @importFrom DT datatable JS
+util_trunc_dt <- function(data, truncate_columns = NULL, max_width = 300) {
+  # Check if specified columns exist
+  truncate_columns <- intersect(truncate_columns, colnames(data))
+
+  # Map column names to zero-based column indices
+  target_indices <- which(colnames(data) %in% truncate_columns) - 1
+
+  # Generate columnDefs for each target column
+  column_defs <- lapply(target_indices, function(index) {
+    list(
+      targets = index,
+      render = DT::JS(
+        sprintf(
+          "function(data, type, row, meta) {
+             return '<div style=\"white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: %dpx;\" title=\"' + data + '\">' + data + '</div>';
+           }", max_width
+        )
+      )
+    )
+  })
+
+  DT::datatable(
+    data,
+    options = list(
+      scrollX = TRUE,
+      pageLength = 10,
+      columnDefs = column_defs
+    ),
+    escape = FALSE,
+    rownames = FALSE
+  )
+}
+
+#' Utility to create a scrollable DT::datatable with nowrap styling
+#'
+#' @param data A data.frame to display
+#' @param page_length Number of rows per page
+#' @param nowrap_columns Optional character vector of column names to apply nowrap styling
+#'
+#' @return A DT::datatable object
+#' @importFrom DT datatable JS
+util_nowrap_dt <- function(data, page_length = 10, nowrap_columns = NULL) {
+  columnDefs <- list()
+
+  if (!is.null(nowrap_columns)) {
+    columnDefs <- lapply(
+      which(colnames(data) %in% nowrap_columns) - 1,  # 0-based index
+      function(i) {
+        list(
+          targets = i,
+          className = "dt-nowrap"
+        )
+      }
+    )
+  }
+
+  DT::datatable(
+    data,
+    options = list(
+      scrollX = TRUE,
+      pageLength = page_length,
+      autoWidth = TRUE,
+      columnDefs = columnDefs
+    ),
+    escape = TRUE,
+    rownames = FALSE,
+    class = "display nowrap"
+  )
+}
+
 
 #' Render RNA fusion table for a selected sample
 #'
@@ -114,6 +195,7 @@ render_rna_fusions <- function(samplesheet, sample_id) {
 #' @importFrom shiny req
 #' @importFrom DT renderDT
 #' @importFrom data.table as.data.table
+#' @importFrom dplyr filter
 filtered_VC <- function(rna_data, sample_id) {
   renderDT({
     req(rna_data, sample_id())

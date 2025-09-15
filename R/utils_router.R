@@ -1,4 +1,4 @@
-#' router
+#' Router UI function
 #'
 #' @description Utility functions for app-wide page routing.
 #'
@@ -9,7 +9,7 @@
 #'
 #' @noRd
 
-# Named routes for clarity and typo-proof switching
+# Named routes for routing
 ROUTES <- list(
   INDEX = "index",
   UPLOAD = "upload",

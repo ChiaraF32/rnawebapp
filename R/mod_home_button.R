@@ -40,7 +40,7 @@ mod_home_button_server <- function(id, go_to_index) {
   })
 }
 
-## To be copied in the UI
+## To be copied in the UI - see function `util_page_layout()` under "utils_ui.R")
 # mod_home_button_ui("home_button_1")
 
 ## To be copied in the server

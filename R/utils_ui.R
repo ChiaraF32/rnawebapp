@@ -1,4 +1,39 @@
-#' Render a single step status UI element
+#' Page layout util
+#'
+#' @description Wrap page content with consistent layout
+#'
+#' @param ... Main content of the page
+#' @param nav_id ID for the navigation button module
+#' @param home_id ID for the home button module
+#' @param next_page Function to call when "proceed" is clicked
+#' @param previous_page Function to call when "return" is clicked
+#' @param go_to_home Function to go back to home page
+#'
+#' @return A tagList with layout
+#' @noRd
+#'
+#' @importFrom shiny tagList div fluidRow column
+util_page_layout <- function(..., nav_id = NULL, home_id = NULL) {
+
+  tagList(
+    div(
+      style = "padding: 30px;",
+      ...
+    ),
+    fluidRow(
+      column(
+        width = 12,
+        div(
+          style = "display: flex; justify-content: space-between; align-items: center; padding: 20px 30px;",
+          if (!is.null(home_id)) mod_home_button_ui(home_id),
+          if (!is.null(nav_id)) mod_nav_buttons_ui(nav_id)
+        )
+      )
+    )
+  )
+}
+
+#' Render a single step status UI element to use during the data processing module `mod_process.R`
 #'
 #' @param step_name Character: label shown in the UI
 #' @param completed_states Character vector of states considered "done"
@@ -20,80 +55,31 @@ render_step_ui <- function(step_name, completed_states, current_state) {
   }
 }
 
-#' Utility to create a DT::datatable with truncated long-text columns
+#' UI progress navigator
 #'
-#' @param data A data.frame to display
-#' @param truncate_columns A character vector of column names to truncate
-#' @param max_width Max width in pixels for truncated columns (default: 300)
+#' @param current_step String indicating the active step (must match one of the `steps`)
+#' @param steps Character vector of step labels
 #'
-#' @return A DT::datatable object
-#' @importFrom DT datatable JS
-util_trunc_dt <- function(data, truncate_columns = NULL, max_width = 300) {
-  # Check if specified columns exist
-  truncate_columns <- intersect(truncate_columns, colnames(data))
+#' @return A 'taglist' with the progress navigator UI
+#'
+#' @description A utils function for building a visual progress navigator
+#'
+#' @noRd
 
-  # Map column names to zero-based column indices
-  target_indices <- which(colnames(data) %in% truncate_columns) - 1
-
-  # Generate columnDefs for each target column
-  column_defs <- lapply(target_indices, function(index) {
-    list(
-      targets = index,
-      render = DT::JS(
-        sprintf(
-          "function(data, type, row, meta) {
-             return '<div style=\"white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: %dpx;\" title=\"' + data + '\">' + data + '</div>';
-           }", max_width
+util_progress_bar <- function(current_step, steps = c("Upload", "Processing", "Parameters", "Results")) {
+  tagList(
+    tags$div(
+      class = "progress-nav",
+      lapply(seq_along(steps), function(i) {
+        tags$div(
+          class = paste(
+            "progress-step",
+            if (steps[i] == current_step) "active" else "inactive"
+          ),
+          steps[i]
         )
-      )
-    )
-  })
-
-  DT::datatable(
-    data,
-    options = list(
-      scrollX = TRUE,
-      pageLength = 10,
-      columnDefs = column_defs
+      })
     ),
-    escape = FALSE,
-    rownames = FALSE
-  )
-}
-
-#' Utility to create a scrollable DT::datatable with nowrap styling
-#'
-#' @param data A data.frame to display
-#' @param page_length Number of rows per page
-#' @param nowrap_columns Optional character vector of column names to apply nowrap styling
-#'
-#' @return A DT::datatable object
-#' @importFrom DT datatable JS
-util_nowrap_dt <- function(data, page_length = 10, nowrap_columns = NULL) {
-  columnDefs <- list()
-
-  if (!is.null(nowrap_columns)) {
-    columnDefs <- lapply(
-      which(colnames(data) %in% nowrap_columns) - 1,  # 0-based index
-      function(i) {
-        list(
-          targets = i,
-          className = "dt-nowrap"
-        )
-      }
-    )
-  }
-
-  DT::datatable(
-    data,
-    options = list(
-      scrollX = TRUE,
-      pageLength = page_length,
-      autoWidth = TRUE,
-      columnDefs = columnDefs
-    ),
-    escape = TRUE,
-    rownames = FALSE,
-    class = "display nowrap"
+    tags$hr()
   )
 }

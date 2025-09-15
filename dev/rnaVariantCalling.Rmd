@@ -11,10 +11,105 @@ library(dplyr)
 library(ggplot2)
 library(DT)
 library(data.table)
+library(vcfR)
 ```
 
+
+
 ```{r load, include=FALSE}
-rna_data<-readRDS("data/new/MUSCLE_v113_data_table.Rds")
+tsv<-"./data/new/MUSCLE_v113.VEP.pass.tsv"
+rna_var<-as.data.frame(fread(tsv))
+
+## Run bcftools and parse script on VCF
+
+# Load required library for better system calls (optional)
+if (!requireNamespace("processx", quietly = TRUE)) install.packages("processx")
+library(processx)
+
+# Define directories and paths
+rna_vcf <- "./data/new/MUSCLE_v113.VEP.pass.vcf.gz"
+output_vcf <- "./data/new/MUSCLE_v113.VEP.pass.parsed.tsv"
+
+```
+
+```{rna_vcf_process, message=FALSE}
+#' Process an RNA VCF File to Extract Annotations
+#'
+#' This function calls a Python script (`parse.py`) to parse a VCF or gzipped VCF file
+#' and extract annotation fields into a tab-separated values (TSV) file. It supports both
+#' compressed (`.vcf.gz`) and uncompressed (`.vcf`) VCF inputs.
+#'
+#' @param vcf Character. Path to the input VCF file (.vcf or .vcf.gz) containing
+#' annotated variants (e.g., VEP annotations).
+#' @param output_tsv Character. Path to the output TSV file that will store the parsed annotations.
+#' @param parse_script Character. Path to the Python script used for parsing
+#' (default: `"./parse.py"`). This script must accept input and output file paths
+#' as arguments and produce a TSV file.
+#'
+#' @details
+#' The Python script should already handle:
+#' \itemize{
+#'   \item Automatic detection of gzipped VCF files.
+#'   \item Removal of columns that are empty across all rows.
+#'   \item Parsing of INFO and CSQ fields to expand annotations.
+#' }
+#' 
+#' This function constructs a system call of the form:
+#' \preformatted{
+#' python parse.py input.vcf.gz output.tsv
+#' }
+#' and executes it using \code{system()}.
+#'
+#' @return No return value. This function is called for its side effect of generating
+#' a TSV file at the specified \code{output_tsv} location.
+#'
+#' @examples
+#' \dontrun{
+#' # Process a compressed VCF file and save output as TSV
+#' process_rna_vcf(
+#'   vcf = "MUSCLE_v113.VEP.pass.vcf.gz",
+#'   output_tsv = "MUSCLE_v113.VEP.pass.tsv",
+#'   parse_script = "/path/to/parse.py"
+#' )
+#' }
+#'
+#' @export
+process_rna_vcf <- function(
+    vcf,
+    output_tsv,
+    parse_script = "./parse.py") {
+  
+  cmd <- sprintf(
+    "python %s %s %s",
+    shQuote(parse_script), shQuote(vcf), shQuote(output_tsv)
+  )
+  system(cmd)
+}
+
+process_rna_vcf(rna_vcf, output_vcf)
+
+```
+
+```{r Rvcf, message=FALSE}
+
+
+# Read VCF (this may still hit memory limits—see note below)
+vcf <- read.vcfR("your_file.vcf.gz")  # Replace with your path
+
+# Extract genotype matrix
+gt <- extract.gt(vcf, element = "GT")  # matrix: variants x samples
+
+# Count non-missing genotypes (i.e., variants) per sample
+variant_counts <- colSums(!is.na(gt) & gt != "./.")
+
+# Convert to data.frame for tabular display
+variant_counts_df <- data.frame(
+  Sample = names(variant_counts),
+  VariantCount = as.integer(variant_counts)
+)
+
+# View or save
+head(variant_counts_df)
 ```
 
 ```{r vcf, message=FALSE}
@@ -112,8 +207,5 @@ ggplot(res_plot_summary, aes(x = FILTER, y = V1,col = GT)) +
   geom_text(data = res_plot_summary[,median(V1),by=c("FILTER","GT")],
             mapping = aes(x=FILTER,y= V1,label = V1, vjust = -0.5),position = position_dodge(0.9),show.legend = F,size = 3.5) +
   ylab("Variants per sample") + scale_x_discrete(guide = guide_axis(n.dodge = 2)) + theme_bw()
-
-
-
 
 ```

@@ -2,19 +2,19 @@
 % Please edit documentation in R/utils_tables.R
 \name{render_gene_table}
 \alias{render_gene_table}
-\title{Render a Gene-Level Results Table with Fixed Columns}
+\title{Render a Sample-Level Results Table with Fixed Columns}
 \usage{
 render_gene_table(data_type, sample_id)
 }
 \arguments{
-\item{data_type}{A `data.frame` or `tibble` containing gene-level results with annotation.
+\item{data_type}{A `data.frame` or `tibble` containing annotated results.
 Must contain `GO_TERMS` and `Phenotypes` columns.}
 }
 \value{
 A Shiny render function that outputs a `DT::datatable`.
 }
 \description{
-Renders a `DT::datatable` for annotated gene-level results (e.g., OUTRIDER or FRASER)
+Renders a `DT::datatable` for annotated sample results (e.g., OUTRIDER or FRASER)
 with selected columns wrapped for display.
 }
 \seealso{

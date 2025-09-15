@@ -118,13 +118,10 @@ mod_cohort_res_server <- function(id, go_to_parameters, go_to_index, uploaded_da
       ))
     })
 
-    # Create object containing genes that are expressed in the outrider data set
-    expressed_genes <- reactive({
-      req(processed_data$outrider)
-      norm_counts <- SummarizedExperiment::assay(processed_data$outrider, normalized = TRUE)
-      expressed <- rownames(norm_counts)[rowSums(norm_counts) > 0]
-      expressed
-    })
+    # Create object containing genes expressed in outrider dataset
+    outrider <- processed_data$outrider
+    expressed_genes <- filtered_expression_genes(outrider)
+
 
     # Update the gene selection dropdown based on the genes that are expressed
     output$select_gene <- renderUI({
@@ -132,7 +129,7 @@ mod_cohort_res_server <- function(id, go_to_parameters, go_to_index, uploaded_da
       selectInput(
         ns("select_gene"),
         "Choose Gene(s)",
-        choices = expressed_genes(),
+        choices = expressed_genes,
         multiple = TRUE
         )
     })
@@ -149,14 +146,13 @@ mod_cohort_res_server <- function(id, go_to_parameters, go_to_index, uploaded_da
     all_selected_genes <- reactive({
       genes1 <- selected_gene()
       genes2 <- phenotype_genes()
-      expressed <- expressed_genes()
 
       # Ensure NULLs are treated as empty character vectors
       genes1 <- if (is.null(genes1)) character() else genes1
       genes2 <- if (is.null(genes2)) character() else genes2
 
       combined <- union(genes1, genes2)
-      valid <- intersect(combined, expressed)
+      valid <- intersect(combined, expressed_genes)
       validate(
         need(length(genes1) > 0 || length(genes2) > 0,
              "Please select at least one gene or phenotype panel."),
