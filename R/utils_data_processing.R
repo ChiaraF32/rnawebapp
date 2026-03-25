@@ -31,7 +31,7 @@ annotate_ensembl_ids <- function(se, annotation = annotables::grch38) {
 
   # Merge with annotation
   merged_annot <- merge(
-    data.table(ensgene = geneIDs),
+    data.table::data.table(ensgene = geneIDs),
     annotation,
     sort = FALSE,
     all.x = TRUE
@@ -52,6 +52,25 @@ annotate_ensembl_ids <- function(se, annotation = annotables::grch38) {
 
     rownames(se) <- new_names
   }
+
+  ## ---- integrate fix_ods_rownames logic here ----
+  rr  <- SummarizedExperiment::rowRanges(se)
+  nms <- names(rr)
+
+  if (is.null(nms)) {
+    # If no names at all, create dummy names
+    names(rr) <- paste0("feature_", seq_along(rr))
+  } else {
+    # Replace NA or empty names with dummy IDs
+    bad <- which(is.na(nms) | nms == "")
+    if (length(bad) > 0) {
+      nms[bad] <- paste0("feature_", bad)
+      names(rr) <- nms
+    }
+  }
+
+  SummarizedExperiment::rowRanges(se) <- rr
+  ## -----------------------------------------------
 
   return(se)
 }

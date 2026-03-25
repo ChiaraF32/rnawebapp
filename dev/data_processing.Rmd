@@ -20,7 +20,7 @@ library(readr)
 Load datasets
 
 ```{r load-data, message=FALSE}
-samplesheet <- readr::read_tsv("./data/fibro/samplesheet.tsv", col_types = cols())
+samplesheet <- readr::read_tsv("./data/new/samplesheet_01.tsv", col_types = cols())
 ods <- readRDS("./data/fibro/ods.Rds")
 fds <- loadFraserDataSet(dir = "./data/fibro/", name = "FIBRO--v29")
 ```
@@ -119,7 +119,7 @@ annotate_ensembl_ids <- function(se, annotation = annotables::grch38) {
 
   # Merge with annotation
   merged_annot <- merge(
-    data.table(ensgene = geneIDs),
+    data.table::data.table(ensgene = geneIDs),
     annotation,
     sort = FALSE,
     all.x = TRUE
@@ -141,12 +141,55 @@ annotate_ensembl_ids <- function(se, annotation = annotables::grch38) {
     rownames(se) <- new_names
   }
 
+  ## ---- integrate fix_ods_rownames logic here ----
+  rr  <- SummarizedExperiment::rowRanges(se)
+  nms <- names(rr)
+
+  if (is.null(nms)) {
+    # If no names at all, create dummy names
+    names(rr) <- paste0("feature_", seq_along(rr))
+  } else {
+    # Replace NA or empty names with dummy IDs
+    bad <- which(is.na(nms) | nms == "")
+    if (length(bad) > 0) {
+      nms[bad] <- paste0("feature_", bad)
+      names(rr) <- nms
+    }
+  }
+
+  SummarizedExperiment::rowRanges(se) <- rr
+  ## -----------------------------------------------
+
   return(se)
 }
 
-# change gene names
-
 ods_hgnc <- annotate_ensembl_ids(ods)
+
+# fix rownames
+
+fix_ods_rownames <- function(ods) {
+  rr <- SummarizedExperiment::rowRanges(ods)
+  nms <- names(rr)
+  
+  if (is.null(nms)) {
+    # If no names at all, create dummy names
+    names(rr) <- paste0("feature_", seq_along(rr))
+  } else {
+    # Replace NA or empty names with dummy IDs
+    bad <- which(is.na(nms) | nms == "")
+    if (length(bad) > 0) {
+      nms[bad] <- paste0("feature_", bad)
+      names(rr) <- nms
+    }
+  }
+  
+  SummarizedExperiment::rowRanges(ods) <- rr
+  ods
+}
+
+# fix them
+
+ods_hgnc <- fix_ods_rownames(ods_hgnc)
 
 ```
 
@@ -166,9 +209,17 @@ Generate and format results tables
 #' @importFrom dplyr select rename transmute filter
 #' @importFrom OUTRIDER results
 #' @importFrom FRASER results
-generate_results <- function(ods, fds, padj_threshold = 0.05, merged = TRUE) {
-  outres <- as.data.frame(OUTRIDER::results(ods, padjCutoff = padj_threshold))
-  frares <- as.data.table(FRASER::results(fds, padjCutoff = padj_threshold))
+generate_results <- function(ods, fds, padj_threshold = 0.1, merged = TRUE) {
+  # OUTRIDER: drop rownames explicitly
+  outres <- OUTRIDER::results(ods, padjCutoff = padj_threshold)
+  outres <- as.data.frame(outres, row.names = NULL)
+  rownames(outres) <- NULL   # belt and braces
+  
+  # FRASER: convert via data.frame, then to data.table, dropping rownames
+  frares <- FRASER::results(fds, padjCutoff = padj_threshold)
+  frares <- as.data.frame(frares, row.names = NULL)
+  rownames(frares) <- NULL
+  frares <- data.table::as.data.table(frares)
   
   frares <- frares %>% 
     dplyr::rename(geneID = hgncSymbol) %>%
