@@ -15,14 +15,15 @@ library(FRASER)
 library(biomaRt)
 library(org.Hs.eg.db)
 library(readr)
+library(shiny)
 ```
 
 Load datasets
 
 ```{r load-data, message=FALSE}
-samplesheet <- readr::read_tsv("./data/new/samplesheet_01.tsv", col_types = cols())
-ods <- readRDS("./data/fibro/ods.Rds")
-fds <- loadFraserDataSet(dir = "./data/fibro/", name = "FIBRO--v29")
+samplesheet <- readr::read_tsv("./data/muscle/file_mapping.tsv", col_types = cols())
+ods <- readRDS("./data/muscle/ods.Rds")
+fds <- loadFraserDataSet(dir = "./data/muscle/", name = "MUSCLE--v113")
 ```
 
 ```{r check-samples, message = FALSE}
@@ -384,7 +385,7 @@ Add in OMIM and GO
 
 annotate_results_with_omim_go <- function(results,
                                           add_omim = TRUE,
-                                          omim_file = "./inst/extdata/omim-phenotype.txt",
+                                          omim_file = omim_file,
                                           add_go = TRUE,
                                           go_source = "ensembl") {
   #Load packages
@@ -392,6 +393,8 @@ annotate_results_with_omim_go <- function(results,
   library(dplyr)
   library(biomaRt)
   library(org.Hs.eg.db)
+  
+  omim_file <- system.file("extdata", "omim-phenotype.txt", package = "rnawebapp")
   
   # Start with the original results
   annotated <- results
